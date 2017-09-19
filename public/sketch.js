@@ -4,7 +4,7 @@ var me, board;
 var myTurn = false;
 var render = false;
 var play = false;
-var robot = false;
+var robot = true;
 var legalMoves;
 
 // Initialize
@@ -41,12 +41,12 @@ function randomInt(min, max) {
 function mousePressed() {
   if (play && robot == false) {
     var columnIndex = int(mouseX / gameData.fieldSize);
-    columnIndex = legalMoves[randomInt(0, legalMoves.length-1)];
     socket.emit('turn', {
       columnIndex: columnIndex
     });
   }
 }
+
 
 // Code for showing table
 function showTable() {
@@ -68,8 +68,27 @@ function showTable() {
     }
 }
 
+function botPlay() {
+  if (play && robot) {
+    var columnIndex = legalMoves[randomInt(0, legalMoves.length-1)];
+    socket.emit('turn', {
+      columnIndex: columnIndex
+    });
+  }
+}
+
 function draw() {
   if (render) {
     showTable();
+    wait(1000);
+    botPlay();
+  }
+}
+
+function wait(ms){
+   var start = new Date().getTime();
+   var end = start;
+   while(end < start + ms) {
+     end = new Date().getTime();
   }
 }

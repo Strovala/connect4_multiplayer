@@ -32,7 +32,6 @@ var currentPlayer = player1;
 var board = initBoard();
 
 var clients = [];
-
 // Init information to client
 gameData = {
   canvasWidth: canvasWidth,
@@ -46,6 +45,11 @@ gameData = {
   board: board
 };
 
+function resetData() {
+  clients = [];
+  board = initBoard();
+}
+
 function Player(playerNum, playerColor) {
   this.number = playerNum;
   this.color = playerColor;
@@ -54,13 +58,16 @@ function Player(playerNum, playerColor) {
 function Client(player) {
   this.gameData = gameData;
   this.player = player;
-  this.play = player.number === PLAYER_1;
+  this.play = false;
 };
 
 function ClientSocket(client, socket) {
   this.client = client;
   this.socket = socket;
 }
+
+var spectatorClient = new Client(new Player(3, BLUE));
+var spectatorClientSocket = new ClientSocket(spectatorClient, null);
 
 function newConnection(socket) {
   console.log("New connection : " + socket.id);
@@ -71,14 +78,15 @@ function newConnection(socket) {
     client = new Client(clients.length == 0 ? player1 : player2);
     socket.emit('start', client);
     clients.push(new ClientSocket(client, socket));
+
     if (clients.length == 2) {
       clients[0].client.play = true;
       updateClients();
     }
   }
-  // Spectators 
+  // Spectators
   else {
-    client = new Client(new Player(3, BLUE));
+    client = spectatorClient;
     socket.emit('start', client);
     updateClients();
   }
@@ -87,7 +95,7 @@ function newConnection(socket) {
 }
 
 function findClientBySocket(socket) {
-  return clients[0].socket === socket ? clients[0] : clients[1];
+  return clients[0].socket === socket ? clients[0] : clients[1].socket === socket ? clients[1] : null;
 }
 
 function getCurrentPlayerClientSocket() {
