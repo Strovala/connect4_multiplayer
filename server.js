@@ -1,5 +1,6 @@
 var express = require('express');
 
+// Initialize application
 var app = express();
 var server = app.listen(3000);
 
@@ -7,17 +8,18 @@ app.use(express.static('public'));
 
 console.log("My socket server is running!");
 
+// Initialize sockets
 var socket = require('socket.io');
 var io = socket(server)
-
 io.sockets.on('connection', newConnection);
+
 clients = [];
 var oldSocketIndex;
 var newCons = 0;
 
 function newConnection(socket) {
   console.log("New connection : " + socket.id);
-  // Send init information to client
+  // Init information to client
   var data = {
     canvasWidth: canvasWidth,
     canvasHeight: canvasHeight,
@@ -33,33 +35,38 @@ function newConnection(socket) {
 
   // Add clients until there are 2 of them
   if (clients.length < 2) {
+    // Send init information
     socket.emit('start', data);
     clients.push(socket);
-  }
-  // Otherwise set client from remembered disconected client
-  else {
+  } else {
+    // Set playerNum to player who was disconected
+    // and then send init data
     data.playerNum = oldSocketIndex+1;
     socket.emit('start', data);
+
+    // Update clients with new socket
     clients[oldSocketIndex] = socket;
-    console.log(currentPlayer + ' on new connection');
+
+    // If earlier disconected player is current player tell him that is his
+    // turn to play
     if (oldSocketIndex == currentPlayer-1) {
-      emitPlay();
+      currentPlayersTurn();
     }
   }
 
-  // Remember which player disconected
+  // Remember which player disconected and dont pop him from array of clients.
+  // When next connection happens, set that new socket on his place
   socket.on('disconnect', function() {
       console.log('Got disconnect!');
 
       var i = clients.indexOf(socket);
       oldSocketIndex = i;
-      console.log(oldSocketIndex + ' on disconnection');
    });
 
   // When client plays turn
   socket.on('turn', playTurn);
 
-  // If this is first connected player give him first turn
+  // If this is first connected player he is player which plays first
   if (clients.length == 1)
     clients[0].emit('play');
 
@@ -70,7 +77,7 @@ function newConnection(socket) {
 }
 
 // Tells a current player to play and opponent to wait
-function emitPlay() {
+function currentPlayersTurn() {
   console.log(currentPlayer + ' before emit');
   clients[currentPlayer-1].emit('play');
   switchPlayers();
@@ -92,7 +99,7 @@ function playTurn(data) {
       board: board
     });
     // Set myTurn variable on clients
-    emitPlay();
+    currentPlayersTurn();
   }
 }
 
