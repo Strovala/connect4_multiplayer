@@ -66,14 +66,13 @@ function newConnection(socket) {
   // When client plays turn
   socket.on('turn', playTurn);
 
-  // If this is first connected player he is player which plays first
-  if (clients.length == 1)
-    clients[0].emit('play');
-
   // Use only for init stage
   if (newCons < 2) {
     switchPlayers();
     newCons++;
+    // If second player has connected, tell first (current) player to play
+    if (newCons == 2)
+      currentPlayersTurn();
   }
 }
 
