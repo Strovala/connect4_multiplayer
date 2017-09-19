@@ -4,30 +4,22 @@ var me, board;
 var myTurn = false;
 var render = false;
 var play = false;
+var robot = false;
+var legalMoves;
 
 // Initialize
 function setup() {
   socket = io.connect('http://localhost:3000');
   socket.on('start', init);
   socket.on('update', update);
-  socket.on('play', setTurn);
-  socket.on('wait', waitTurn);
 
   ellipseMode(CORNER);
-}
-
-function setTurn() {
-  play = true;
-}
-
-function waitTurn() {
-  play = false;
 }
 
 function update(data) {
   board = data.board;
   play = data.currentPlayer.number === me.number;
-  console.log(me.number + ' ' + play);
+  legalMoves = data.legalMoves;
 }
 
 // Initialize
@@ -43,7 +35,7 @@ function init(client) {
 
 // Send column index if it is your turn
 function mousePressed() {
-  if (play) {
+  if (play && robot == false) {
     var columnIndex = int(mouseX / gameData.fieldSize);
     socket.emit('turn', {
       columnIndex: columnIndex
@@ -72,6 +64,7 @@ function showTable() {
 }
 
 function draw() {
-  if (render)
+  if (render) {
     showTable();
+  }
 }

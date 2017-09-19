@@ -32,8 +32,6 @@ var currentPlayer = player1;
 var board = initBoard();
 
 var clients = [];
-var oldClient;
-var newCons = 0;
 
 // Init information to client
 gameData = {
@@ -77,43 +75,9 @@ function newConnection(socket) {
       clients[0].client.play = true;
       updateClients();
     }
-  // } else if (clients.length == 2) {
-  //   // Set playerNum to player who was disconected
-  //   // and then send init data
-  //   data.playerNum = oldSocketIndex+1;
-  //   socket.emit('start', data);
-  //
-  //   // Update clients with new socket
-  //   clients[oldSocketIndex] = socket;
-  //
-  //   // If earlier disconected player is current player tell him that is his
-  //   // turn to play
-  //   if (oldSocketIndex == currentPlayer-1) {
-  //     currentPlayersTurn();
-  //   }
   }
-
-  // Remember which player disconected and dont pop him from array of clients.
-  // When next connection happens, set that new socket on his place
-  // socket.on('disconnect', function() {
-  //     console.log('Got disconnect!');
-  //
-  //     oldClient = findClientBySocket(socket);
-  //     var index = clients.indexOf(oldClient);
-  //     clients.splice(index, 1);
-  //  });
-
   // When client plays turn
   socket.on('turn', playTurn);
-
-  // Use only for init stage
-  // if (newCons < 2) {
-  //   switchPlayers();
-  //   newCons++;
-  //   // If second player has connected, tell first (current) player to play
-  //   if (newCons == 2)
-  //     currentPlayersTurn();
-  // }
 }
 
 function findClientBySocket(socket) {
@@ -132,7 +96,8 @@ function updateClients() {
   // Update board and send current player to all clients
   io.sockets.emit('update', {
     board: board,
-    currentPlayer: getCurrentPlayerClientSocket().client.player
+    currentPlayer: getCurrentPlayerClientSocket().client.player,
+    legalMoves: legalMoves()
   });
 }
 
@@ -155,6 +120,15 @@ function playTurn(data) {
     switchPlayers();
     updateClients();
   }
+}
+
+function legalMoves() {
+  var legal = []
+  for (var i = 0; i < gameData.fieldWidth; i++) {
+    if (findNext(i) >= 0)
+      legal.push(i);
+  }
+  return legal;
 }
 
 function initBoard() {
