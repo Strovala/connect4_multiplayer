@@ -53,23 +53,30 @@ function Player(playerNum, playerColor) {
   this.color = playerColor;
 };
 
-function ClientSocket(playerNumber, socket) {
+function Client(player) {
   this.gameData = gameData;
-  this.playerNumber = playerNumber;
+  this.player = player;
   this.play = false;
-  this.socket = socket;
 };
+
+function ClientSocket(client, socket) {
+  this.client = client;
+  this.socket = socket;
+}
 
 function newConnection(socket) {
   console.log("New connection : " + socket.id);
   var client;
   // Add clients until there are 2 of them
   if (clients.length < 2) {
-    // Send init information
-    client = new ClientSocket(clients.length + 1);
-    console.log(client);
+    // Init client object with 1 and 2 as player numbers
+    client = new Client(clients.length == 0 ? player1 : player2);
     socket.emit('start', client);
-    clients.push(client);
+    clients.push(new ClientSocket(client, socket));
+    if (clients.length == 2) {
+      clients[0].client.play = true;
+      updateClients();
+    }
   // } else if (clients.length == 2) {
   //   // Set playerNum to player who was disconected
   //   // and then send init data
@@ -96,7 +103,7 @@ function newConnection(socket) {
   //  });
 
   // When client plays turn
-  // socket.on('turn', playTurn);
+  socket.on('turn', playTurn);
 
   // Use only for init stage
   // if (newCons < 2) {
@@ -108,12 +115,27 @@ function newConnection(socket) {
   // }
 }
 
-// Tells a current player to play and opponent to wait
-function currentPlayersTurn() {
-  clients[currentPlayer-1].emit('play');
-  switchPlayers();
-  clients[currentPlayer-1].emit('wait');
-  switchPlayers();
+function getCurrentPlayerClientSocket() {
+  return clients[0].client.play ? clients[0] : clients[1].client.play ? clients[1] : undefined;
+}
+
+function getOpponentClientSocket() {
+  return clients[0].client.play ? clients[1] : clients[1].client.play ? clients[0] : undefined;
+}
+
+function updateClients() {
+  // Update board and send current player to all clients
+  io.sockets.emit('update', {
+    board: board,
+    currentPlayer: getCurrentPlayerClientSocket().client.player
+  });
+}
+
+function switchPlayers() {
+  var current = getCurrentPlayerClientSocket();
+  var opponent = getOpponentClientSocket();
+  current.client.play = false;
+  opponent.client.play = true;
 }
 
 // Play turn that client send as columnIndex
@@ -122,14 +144,11 @@ function playTurn(data) {
   var rowIndex = findNext(columnIndex);
   // If he can put at that column, otherwise he still must play turn
   if (rowIndex >= 0) {
-    updateBoard(rowIndex, columnIndex, currentPlayer);
+    var current = getCurrentPlayerClientSocket().client.player;
+    updateBoard(rowIndex, columnIndex, current.number);
+
     switchPlayers();
-    // Update board to all clients
-    io.sockets.emit('update', {
-      board: board
-    });
-    // Set myTurn variable on clients
-    currentPlayersTurn();
+    updateClients();
   }
 }
 
@@ -152,10 +171,6 @@ function findNext(columnIndex) {
 
 function updateBoard(j, i, player) {
   board[j][i] = player;
-}
-
-function switchPlayers() {
-  currentPlayer = currentPlayer === 1 ? 2 : 1;
 }
 
 function valid(row, column) {

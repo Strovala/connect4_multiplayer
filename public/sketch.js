@@ -3,6 +3,7 @@ var gameData;
 var me, board;
 var myTurn = false;
 var render = false;
+var play = false;
 
 // Initialize
 function setup() {
@@ -16,31 +17,33 @@ function setup() {
 }
 
 function setTurn() {
-  gameData.play = true;
+  play = true;
 }
 
 function waitTurn() {
-  gameData.play = false;
+  play = false;
 }
 
 function update(data) {
   board = data.board;
+  play = data.currentPlayer.number === me.number;
+  console.log(me.number + ' ' + play);
 }
 
 // Initialize
 function init(client) {
   render = true;
   gameData = client.gameData;
-  gameData.play = client.play;
+  play = client.play;
   board = gameData.board;
-  me = client.playerNumber == 1 ? gameData.player1 : gameData.player2;
+  me = client.player;
   createCanvas(gameData.canvasWidth, gameData.canvasHeight);
   background(gameData.backgroundColor);
 }
 
 // Send column index if it is your turn
 function mousePressed() {
-  if (gameData.play) {
+  if (play) {
     var columnIndex = int(mouseX / gameData.fieldSize);
     socket.emit('turn', {
       columnIndex: columnIndex
