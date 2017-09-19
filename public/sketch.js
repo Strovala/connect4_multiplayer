@@ -33,10 +33,15 @@ function init(client) {
   background(gameData.backgroundColor);
 }
 
+function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 // Send column index if it is your turn
 function mousePressed() {
   if (play && robot == false) {
     var columnIndex = int(mouseX / gameData.fieldSize);
+    columnIndex = legalMoves[randomInt(0, legalMoves.length-1)];
     socket.emit('turn', {
       columnIndex: columnIndex
     });

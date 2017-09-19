@@ -54,7 +54,7 @@ function Player(playerNum, playerColor) {
 function Client(player) {
   this.gameData = gameData;
   this.player = player;
-  this.play = false;
+  this.play = player.number === PLAYER_1;
 };
 
 function ClientSocket(client, socket) {
@@ -75,6 +75,12 @@ function newConnection(socket) {
       clients[0].client.play = true;
       updateClients();
     }
+  }
+  // Spectators 
+  else {
+    client = new Client(new Player(3, BLUE));
+    socket.emit('start', client);
+    updateClients();
   }
   // When client plays turn
   socket.on('turn', playTurn);
