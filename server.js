@@ -33,46 +33,49 @@ function newConnection(socket) {
     board: board
   };
 
-  // Add clients until there are 2 of them
-  if (clients.length < 2) {
-    // Send init information
-    socket.emit('start', data);
-    clients.push(socket);
-  } else {
-    // Set playerNum to player who was disconected
-    // and then send init data
-    data.playerNum = oldSocketIndex+1;
-    socket.emit('start', data);
+  // Allow only 2 connections
+  if (clients.length == 2) {
+    // Add clients until there are 2 of them
+    if (clients.length < 2) {
+      // Send init information
+      socket.emit('start', data);
+      clients.push(socket);
+    } else {
+      // Set playerNum to player who was disconected
+      // and then send init data
+      data.playerNum = oldSocketIndex+1;
+      socket.emit('start', data);
 
-    // Update clients with new socket
-    clients[oldSocketIndex] = socket;
+      // Update clients with new socket
+      clients[oldSocketIndex] = socket;
 
-    // If earlier disconected player is current player tell him that is his
-    // turn to play
-    if (oldSocketIndex == currentPlayer-1) {
-      currentPlayersTurn();
+      // If earlier disconected player is current player tell him that is his
+      // turn to play
+      if (oldSocketIndex == currentPlayer-1) {
+        currentPlayersTurn();
+      }
     }
-  }
 
-  // Remember which player disconected and dont pop him from array of clients.
-  // When next connection happens, set that new socket on his place
-  socket.on('disconnect', function() {
-      console.log('Got disconnect!');
+    // Remember which player disconected and dont pop him from array of clients.
+    // When next connection happens, set that new socket on his place
+    socket.on('disconnect', function() {
+        console.log('Got disconnect!');
 
-      var i = clients.indexOf(socket);
-      oldSocketIndex = i;
-   });
+        var i = clients.indexOf(socket);
+        oldSocketIndex = i;
+     });
 
-  // When client plays turn
-  socket.on('turn', playTurn);
+    // When client plays turn
+    socket.on('turn', playTurn);
 
-  // Use only for init stage
-  if (newCons < 2) {
-    switchPlayers();
-    newCons++;
-    // If second player has connected, tell first (current) player to play
-    if (newCons == 2)
-      currentPlayersTurn();
+    // Use only for init stage
+    if (newCons < 2) {
+      switchPlayers();
+      newCons++;
+      // If second player has connected, tell first (current) player to play
+      if (newCons == 2)
+        currentPlayersTurn();
+    }
   }
 }
 
