@@ -1,9 +1,6 @@
 var socket;
-var fieldSize, fieldWidth, fieldHeight;
-var board;
-var backgroundColor;
-var player1Color, player2Color;
-var playerNum;
+var gameData;
+var me;
 var myTurn = false;
 
 // Initialize
@@ -18,11 +15,11 @@ function setup() {
 }
 
 function setTurn() {
-  myTurn = true;
+  gameData.play = true;
 }
 
 function waitTurn() {
-  myTurn = false;
+  gameData.play = false;
 }
 
 function update(data) {
@@ -30,23 +27,18 @@ function update(data) {
 }
 
 // Initialize
-function init(data) {
-    createCanvas(data.canvasWidth, data.canvasHeight);
-    backgroundColor = data.backgroundColor;
-    fieldSize = data.fieldSize;
-    fieldWidth = data.fieldWidth;
-    fieldHeight = data.fieldHeight;
-    board = data.board;
-    player1Color = data.player1Color;
-    player2Color = data.player2Color;
-    playerNum = data.playerNum;
-    background(backgroundColor);
+function init(client) {
+  gameData = client.gameData;
+  gameData.play = client.play;
+  me = client.playerNumber == 1 ? player1 : player2;
+  createCanvas(gameData.canvasWidth, gameData.canvasHeight);
+  background(gameData.backgroundColor);
 }
 
 // Send column index if it is your turn
 function mousePressed() {
-  if (myTurn) {
-    var columnIndex = int(mouseX / fieldSize);
+  if (gameData.play) {
+    var columnIndex = int(mouseX / gameData.fieldSize);
     socket.emit('turn', {
       columnIndex: columnIndex
     });
@@ -55,20 +47,20 @@ function mousePressed() {
 
 // Code for showing table
 function showTable() {
-  for (var j = 0; j < fieldHeight; j++)
-    for (var i = 0; i < fieldWidth; i++) {
+  for (var j = 0; j < gameData.fieldHeight; j++)
+    for (var i = 0; i < gameData.fieldWidth; i++) {
       // Set color to white, for drawing rectangle
-      fill(backgroundColor);
+      fill(gameData.backgroundColor);
       // Top left pixel, for drawing
-      var topLeftX = i * fieldSize;
-      var topLeftY = j * fieldSize;
-      rect(topLeftX, topLeftY, fieldSize, fieldSize);
+      var topLeftX = i * gameData.fieldSize;
+      var topLeftY = j * gameData.fieldSize;
+      rect(topLeftX, topLeftY, gameData.fieldSize, gameData.fieldSize);
       // Field from board at current position
       var field = board[j][i];
       // If field is not empty, set color to corresponding players color
       if (field > 0) {
-        fill(field === 1 ? player1Color: field === 2 ? player2Color : 0);
-        ellipse(topLeftX, topLeftY, fieldSize, fieldSize);
+        fill(field === 1 ? player1.color: field === 2 ? player2.color : 0);
+        ellipse(topLeftX, topLeftY, gameData.fieldSize, gameData.fieldSize);
       }
     }
 }
