@@ -41,7 +41,6 @@ function init(data) {
     player2Color = data.player2Color;
     playerNum = data.playerNum;
     background(backgroundColor);
-    console.log(data);
 }
 
 // Send column index if it is your turn
@@ -76,6 +75,4 @@ function showTable() {
 
 function draw() {
   showTable();
-  console.log(myTurn);
-  console.log(playerNum);
 }
