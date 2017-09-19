@@ -70,6 +70,7 @@ function newConnection(socket) {
   if (clients.length == 1)
     clients[0].emit('play');
 
+  // Use only for init stage
   if (newCons < 2) {
     switchPlayers();
     newCons++;
