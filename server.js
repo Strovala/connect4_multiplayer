@@ -79,7 +79,6 @@ function newConnection(socket) {
 
 // Tells a current player to play and opponent to wait
 function currentPlayersTurn() {
-  console.log(currentPlayer + ' before emit');
   clients[currentPlayer-1].emit('play');
   switchPlayers();
   clients[currentPlayer-1].emit('wait');
@@ -92,7 +91,6 @@ function playTurn(data) {
   var rowIndex = findNext(columnIndex);
   // If he can put at that column, otherwise he still must play turn
   if (rowIndex >= 0) {
-    console.log(currentPlayer + ' before upload');
     updateBoard(rowIndex, columnIndex, currentPlayer);
     switchPlayers();
     // Update board to all clients
