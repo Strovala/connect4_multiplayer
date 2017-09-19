@@ -32,7 +32,7 @@ var currentPlayer = player1;
 var board = initBoard();
 
 var clients = [];
-var oldSocketIndex;
+var oldClient;
 var newCons = 0;
 
 // Init information to client
@@ -98,8 +98,9 @@ function newConnection(socket) {
   // socket.on('disconnect', function() {
   //     console.log('Got disconnect!');
   //
-  //     var i = clients.indexOf(socket);
-  //     oldSocketIndex = i;
+  //     oldClient = findClientBySocket(socket);
+  //     var index = clients.indexOf(oldClient);
+  //     clients.splice(index, 1);
   //  });
 
   // When client plays turn
@@ -113,6 +114,10 @@ function newConnection(socket) {
   //   if (newCons == 2)
   //     currentPlayersTurn();
   // }
+}
+
+function findClientBySocket(socket) {
+  return clients[0].socket === socket ? clients[0] : clients[1];
 }
 
 function getCurrentPlayerClientSocket() {
