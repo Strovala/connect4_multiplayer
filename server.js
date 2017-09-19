@@ -13,7 +13,25 @@ var socket = require('socket.io');
 var io = socket(server)
 io.sockets.on('connection', newConnection);
 
-clients = [];
+
+var fieldWidth = 7, fieldHeight = 6, fieldSize = 100;
+var canvasHeight = fieldHeight * fieldSize, canvasWidth = fieldWidth * fieldSize;
+
+var WHITE = 'white';
+var RED = 'red';
+var GREEN = 'green';
+var BLUE = 'blue';
+
+var PLAYER_1 = 1;
+var PLAYER_2 = 2;
+var player1 = new Player(PLAYER_1, RED);
+var player2 = new Player(PLAYER_2, GREEN);
+var currentPlayer = player1;
+
+// Board represented as matrix of integer (0 - empty; 1 - Player 1; 2 - Player 2)
+var board = initBoard();
+
+var clients = [];
 var oldSocketIndex;
 var newCons = 0;
 
@@ -35,9 +53,9 @@ function Player(playerNum, playerColor) {
   this.color = playerColor;
 };
 
-function ClientSocket(player, socket) {
+function ClientSocket(playerNumber, socket) {
   this.gameData = gameData;
-  this.playerNumber = player;
+  this.playerNumber = playerNumber;
   this.play = false;
   this.socket = socket;
 };
@@ -48,10 +66,46 @@ function newConnection(socket) {
   // Add clients until there are 2 of them
   if (clients.length < 2) {
     // Send init information
-    client = new ClientSocket(clients.length + 1, socket);
+    client = new ClientSocket(clients.length + 1);
+    console.log(client);
     socket.emit('start', client);
     clients.push(client);
+  // } else if (clients.length == 2) {
+  //   // Set playerNum to player who was disconected
+  //   // and then send init data
+  //   data.playerNum = oldSocketIndex+1;
+  //   socket.emit('start', data);
+  //
+  //   // Update clients with new socket
+  //   clients[oldSocketIndex] = socket;
+  //
+  //   // If earlier disconected player is current player tell him that is his
+  //   // turn to play
+  //   if (oldSocketIndex == currentPlayer-1) {
+  //     currentPlayersTurn();
+  //   }
   }
+
+  // Remember which player disconected and dont pop him from array of clients.
+  // When next connection happens, set that new socket on his place
+  // socket.on('disconnect', function() {
+  //     console.log('Got disconnect!');
+  //
+  //     var i = clients.indexOf(socket);
+  //     oldSocketIndex = i;
+  //  });
+
+  // When client plays turn
+  // socket.on('turn', playTurn);
+
+  // Use only for init stage
+  // if (newCons < 2) {
+  //   switchPlayers();
+  //   newCons++;
+  //   // If second player has connected, tell first (current) player to play
+  //   if (newCons == 2)
+  //     currentPlayersTurn();
+  // }
 }
 
 // Tells a current player to play and opponent to wait
@@ -78,23 +132,6 @@ function playTurn(data) {
     currentPlayersTurn();
   }
 }
-
-var fieldWidth = 7, fieldHeight = 6, fieldSize = 100;
-var canvasHeight = fieldHeight * fieldSize, canvasWidth = fieldWidth * fieldSize;
-
-var WHITE = 'white';
-var RED = 'red';
-var GREEN = 'green';
-var BLUE = 'blue';
-
-var PLAYER_1 = 1;
-var PLAYER_2 = 2;
-var player1 = Player(PLAYER_1, RED);
-var player2 = Player(PLAYER_2, GREEN);
-var currentPlayer = player1;
-
-// Board represented as matrix of integer (0 - empty; 1 - Player 1; 2 - Player 2)
-var board = initBoard();
 
 function initBoard() {
   var mat = new Array(fieldHeight);

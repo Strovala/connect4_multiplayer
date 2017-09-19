@@ -1,7 +1,8 @@
 var socket;
 var gameData;
-var me;
+var me, board;
 var myTurn = false;
+var render = false;
 
 // Initialize
 function setup() {
@@ -28,9 +29,11 @@ function update(data) {
 
 // Initialize
 function init(client) {
+  render = true;
   gameData = client.gameData;
   gameData.play = client.play;
-  me = client.playerNumber == 1 ? player1 : player2;
+  board = gameData.board;
+  me = client.playerNumber == 1 ? gameData.player1 : gameData.player2;
   createCanvas(gameData.canvasWidth, gameData.canvasHeight);
   background(gameData.backgroundColor);
 }
@@ -59,12 +62,13 @@ function showTable() {
       var field = board[j][i];
       // If field is not empty, set color to corresponding players color
       if (field > 0) {
-        fill(field === 1 ? player1.color: field === 2 ? player2.color : 0);
+        fill(field === 1 ? gameData.player1.color: field === 2 ? gameData.player2.color : 0);
         ellipse(topLeftX, topLeftY, gameData.fieldSize, gameData.fieldSize);
       }
     }
 }
 
 function draw() {
-  showTable();
+  if (render)
+    showTable();
 }
