@@ -7,11 +7,39 @@ var play = false;
 var robot = true;
 var legalMoves;
 
-// Initialize
+var startGame = false, nickname;
+var formNick = $('.form_nick');
+var nickElem = $('#nick');
+var startBtn = $('#start_game');
+
+
+startBtn.on('click', function () {
+  nickname = $('#nick').val();
+  if (nickname == '')
+    return;
+  startGame = true;
+
+  formNick.remove();
+
+  lateSetUp();
+});
+
 function setup() {
+
+}
+
+function lateSetUp() {
   socket = io.connect('http://localhost:3000');
   socket.on('start', init);
   socket.on('update', update);
+  socket.on('disconnect_req', function() {
+    console.log('Ordered dissconection');
+    socket.emit('disconnect');
+    startGame = false;
+    render = false;
+    // refresh
+    location.reload();
+  })
 
   ellipseMode(CORNER);
 }
@@ -24,8 +52,10 @@ function update(data) {
 
 // Initialize
 function init(client) {
+  console.log(gameData);
   render = true;
   gameData = client.gameData;
+  console.log(gameData);
   play = client.play;
   board = gameData.board;
   me = client.player;
@@ -78,10 +108,11 @@ function botPlay() {
 }
 
 function draw() {
-  if (render) {
+  if (startGame && render) {
     showTable();
     wait(1000);
     botPlay();
+    wait(1000);
   }
 }
 

@@ -48,6 +48,7 @@ gameData = {
 function resetData() {
   clients = [];
   board = initBoard();
+  gameData.board = board;
 }
 
 function Player(playerNum, playerColor) {
@@ -90,20 +91,41 @@ function newConnection(socket) {
     socket.emit('start', client);
     updateClients();
   }
+
+  socket.on('disconnect', function () {
+    console.log('Got disconnect');
+
+    var oldClient = findClientBySocket(socket);
+    if (oldClient != null) {
+      console.log('Requested dissconection');
+      resetData();
+      updateClients();
+      io.sockets.emit('disconnect_req');
+    }
+  });
+
   // When client plays turn
   socket.on('turn', playTurn);
 }
 
 function findClientBySocket(socket) {
-  return clients[0].socket === socket ? clients[0] : clients[1].socket === socket ? clients[1] : null;
+  for (var i = 0; i < clients.length; i++) {
+    if (clients[i].socket.id === socket.id)
+      return clients[i];
+  }
+  return null;
 }
 
 function getCurrentPlayerClientSocket() {
-  return clients[0].client.play ? clients[0] : clients[1].client.play ? clients[1] : undefined;
+  return clients[0] && clients[0].client.play ? clients[0] :
+         clients[1] && clients[1].client.play ? clients[1] :
+         spectatorClientSocket;
 }
 
 function getOpponentClientSocket() {
-  return clients[0].client.play ? clients[1] : clients[1].client.play ? clients[0] : undefined;
+  return clients[0] && clients[0].client.play ? clients[1] :
+         clients[1] && clients[1].client.play ? clients[0] :
+         spectatorClientSocket;
 }
 
 function updateClients() {
