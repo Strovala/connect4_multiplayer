@@ -13,75 +13,135 @@ var socket = require('socket.io');
 var io = socket(server)
 io.sockets.on('connection', newConnection);
 
-clients = [];
-var oldSocketIndex;
-var newCons = 0;
+
+var fieldWidth = 7, fieldHeight = 6, fieldSize = 100;
+var canvasHeight = fieldHeight * fieldSize, canvasWidth = fieldWidth * fieldSize;
+
+var WHITE = 'white';
+var RED = 'red';
+var GREEN = 'green';
+var BLUE = 'blue';
+
+var PLAYER_1 = 1;
+var PLAYER_2 = 2;
+var player1 = new Player(PLAYER_1, RED);
+var player2 = new Player(PLAYER_2, GREEN);
+var currentPlayer = player1;
+
+// Board represented as matrix of integer (0 - empty; 1 - Player 1; 2 - Player 2)
+var board = initBoard();
+
+var clients = [];
+// Init information to client
+gameData = {
+  canvasWidth: canvasWidth,
+  canvasHeight: canvasHeight,
+  backgroundColor: WHITE,
+  fieldSize: fieldSize,
+  fieldWidth: fieldWidth,
+  fieldHeight: fieldHeight,
+  player1: player1,
+  player2: player2,
+  board: board
+};
+
+function resetData() {
+  clients = [];
+  board = initBoard();
+  gameData.board = board;
+}
+
+function Player(playerNum, playerColor) {
+  this.number = playerNum;
+  this.color = playerColor;
+};
+
+function Client(player) {
+  this.gameData = gameData;
+  this.player = player;
+  this.play = false;
+};
+
+function ClientSocket(client, socket) {
+  this.client = client;
+  this.socket = socket;
+}
+
+var spectatorClient = new Client(new Player(3, BLUE));
+var spectatorClientSocket = new ClientSocket(spectatorClient, null);
 
 function newConnection(socket) {
   console.log("New connection : " + socket.id);
-  // Init information to client
-  var data = {
-    canvasWidth: canvasWidth,
-    canvasHeight: canvasHeight,
-    backgroundColor: WHITE,
-    fieldSize: fieldSize,
-    fieldWidth: fieldWidth,
-    fieldHeight: fieldHeight,
-    player1Color: player1Color,
-    player2Color: player2Color,
-    playerNum: currentPlayer,
-    board: board
-  };
-
+  var client;
   // Add clients until there are 2 of them
   if (clients.length < 2) {
-    // Send init information
-    socket.emit('start', data);
-    clients.push(socket);
-  } else {
-    // Set playerNum to player who was disconected
-    // and then send init data
-    data.playerNum = oldSocketIndex+1;
-    socket.emit('start', data);
+    // Init client object with 1 and 2 as player numbers
+    client = new Client(clients.length == 0 ? player1 : player2);
+    socket.emit('start', client);
+    clients.push(new ClientSocket(client, socket));
 
-    // Update clients with new socket
-    clients[oldSocketIndex] = socket;
-
-    // If earlier disconected player is current player tell him that is his
-    // turn to play
-    if (oldSocketIndex == currentPlayer-1) {
-      currentPlayersTurn();
+    if (clients.length == 2) {
+      clients[0].client.play = true;
+      updateClients();
     }
   }
+  // Spectators
+  else {
+    client = spectatorClient;
+    socket.emit('start', client);
+    updateClients();
+  }
 
-  // Remember which player disconected and dont pop him from array of clients.
-  // When next connection happens, set that new socket on his place
-  socket.on('disconnect', function() {
-      console.log('Got disconnect!');
+  socket.on('disconnect', function () {
+    console.log('Got disconnect');
 
-      var i = clients.indexOf(socket);
-      oldSocketIndex = i;
-   });
+    var oldClient = findClientBySocket(socket);
+    if (oldClient != null) {
+      console.log('Requested dissconection');
+      resetData();
+      updateClients();
+      io.sockets.emit('disconnect_req');
+    }
+  });
 
   // When client plays turn
   socket.on('turn', playTurn);
-
-  // Use only for init stage
-  if (newCons < 2) {
-    switchPlayers();
-    newCons++;
-    // If second player has connected, tell first (current) player to play
-    if (newCons == 2)
-      currentPlayersTurn();
-  }
 }
 
-// Tells a current player to play and opponent to wait
-function currentPlayersTurn() {
-  clients[currentPlayer-1].emit('play');
-  switchPlayers();
-  clients[currentPlayer-1].emit('wait');
-  switchPlayers();
+function findClientBySocket(socket) {
+  for (var i = 0; i < clients.length; i++) {
+    if (clients[i].socket.id === socket.id)
+      return clients[i];
+  }
+  return null;
+}
+
+function getCurrentPlayerClientSocket() {
+  return clients[0] && clients[0].client.play ? clients[0] :
+         clients[1] && clients[1].client.play ? clients[1] :
+         spectatorClientSocket;
+}
+
+function getOpponentClientSocket() {
+  return clients[0] && clients[0].client.play ? clients[1] :
+         clients[1] && clients[1].client.play ? clients[0] :
+         spectatorClientSocket;
+}
+
+function updateClients() {
+  // Update board and send current player to all clients
+  io.sockets.emit('update', {
+    board: board,
+    currentPlayer: getCurrentPlayerClientSocket().client.player,
+    legalMoves: legalMoves()
+  });
+}
+
+function switchPlayers() {
+  var current = getCurrentPlayerClientSocket();
+  var opponent = getOpponentClientSocket();
+  current.client.play = false;
+  opponent.client.play = true;
 }
 
 // Play turn that client send as columnIndex
@@ -90,29 +150,22 @@ function playTurn(data) {
   var rowIndex = findNext(columnIndex);
   // If he can put at that column, otherwise he still must play turn
   if (rowIndex >= 0) {
-    updateBoard(rowIndex, columnIndex, currentPlayer);
+    var current = getCurrentPlayerClientSocket().client.player;
+    updateBoard(rowIndex, columnIndex, current.number);
+
     switchPlayers();
-    // Update board to all clients
-    io.sockets.emit('update', {
-      board: board
-    });
-    // Set myTurn variable on clients
-    currentPlayersTurn();
+    updateClients();
   }
 }
 
-var fieldWidth = 7, fieldHeight = 6, fieldSize = 100;
-var canvasHeight = fieldHeight * fieldSize, canvasWidth = fieldWidth * fieldSize;
-var WHITE = 'white';
-var RED = 'red';
-var GREEN = 'green';
-var BLUE = 'blue';
-
-var player1Color = RED, player2Color = GREEN;
-var currentPlayer = 1;
-
-// Board represented as matrix of integer (0 - empty; 1 - Player 1; 2 - Player 2)
-var board = initBoard();
+function legalMoves() {
+  var legal = []
+  for (var i = 0; i < gameData.fieldWidth; i++) {
+    if (findNext(i) >= 0)
+      legal.push(i);
+  }
+  return legal;
+}
 
 function initBoard() {
   var mat = new Array(fieldHeight);
@@ -133,10 +186,6 @@ function findNext(columnIndex) {
 
 function updateBoard(j, i, player) {
   board[j][i] = player;
-}
-
-function switchPlayers() {
-  currentPlayer = currentPlayer === 1 ? 2 : 1;
 }
 
 function valid(row, column) {
