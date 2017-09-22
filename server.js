@@ -70,6 +70,8 @@ function ClientSocket(client, socket) {
 var spectatorClient = new Client(new Player(3, BLUE));
 var spectatorClientSocket = new ClientSocket(spectatorClient, null);
 
+var win = false;
+
 function newConnection(socket) {
   console.log("New connection : " + socket.id);
   var client;
@@ -82,6 +84,7 @@ function newConnection(socket) {
 
     if (clients.length == 2) {
       clients[0].client.play = true;
+      win = false;
       updateClients();
     }
   }
@@ -146,6 +149,7 @@ function switchPlayers() {
 
 // Play turn that client send as columnIndex
 function playTurn(data) {
+  if (win) return;
   var columnIndex = data.columnIndex;
   var rowIndex = findNext(columnIndex);
   // If he can put at that column, otherwise he still must play turn
@@ -155,6 +159,9 @@ function playTurn(data) {
 
     switchPlayers();
     updateClients();
+  }
+  if (getWinner() > 0) {
+    win = true;
   }
 }
 

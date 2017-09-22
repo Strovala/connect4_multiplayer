@@ -4,17 +4,19 @@ var me, board;
 var myTurn = false;
 var render = false;
 var play = false;
-var robot = true;
+var robot = false;
 var legalMoves;
 
 var startGame = false, nickname;
 var formNick = $('.form_nick');
 var nickElem = $('#nick');
+var robotElem = $('#robot');
 var startBtn = $('#start_game');
 
 
 startBtn.on('click', function () {
-  nickname = $('#nick').val();
+  robot = robotElem.is(':checked');
+  nickname = $('#nick')
   if (nickname == '')
     return;
   startGame = true;
@@ -52,10 +54,8 @@ function update(data) {
 
 // Initialize
 function init(client) {
-  console.log(gameData);
   render = true;
   gameData = client.gameData;
-  console.log(gameData);
   play = client.play;
   board = gameData.board;
   me = client.player;
@@ -101,6 +101,18 @@ function showTable() {
 function botPlay() {
   if (play && robot) {
     var columnIndex = legalMoves[randomInt(0, legalMoves.length-1)];
+
+    // Your Code
+    var bot = new Bot(me.number);
+    var boardObj = new Board(gameData.fieldHeight, gameData.fieldWidth);
+    boardObj.board = boardObj.copyBoard(board);
+    var best = bot.bestMove(boardObj, 2);
+    columnIndex = best.move;;
+
+    // Tour Code End
+
+
+
     socket.emit('turn', {
       columnIndex: columnIndex
     });
@@ -110,9 +122,9 @@ function botPlay() {
 function draw() {
   if (startGame && render) {
     showTable();
-    wait(1000);
+    // wait(1000);
     botPlay();
-    wait(1000);
+    // wait(1000);
   }
 }
 
