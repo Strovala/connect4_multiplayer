@@ -111,7 +111,7 @@ function botPlay() {
       boardObj.board = boardObj.copyBoard(board);
       var best = bot.bestMove(boardObj, 6);
       columnIndex = best.move;
-    } else {
+    } else if (nickname === 'Krimina') {
       var bot = new Bot(me.number);
       var boardObj = new Board(gameData.fieldHeight, gameData.fieldWidth);
       boardObj.board = boardObj.copyBoard(board);
