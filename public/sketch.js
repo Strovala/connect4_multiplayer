@@ -31,6 +31,7 @@ function setup() {
 }
 
 function lateSetUp() {
+  // socket = io.connect('http://178.79.17.81:3000');
   socket = io.connect('http://localhost:3000');
   socket.on('start', init);
   socket.on('update', update);
@@ -107,9 +108,9 @@ function botPlay() {
     var boardObj = new Board(gameData.fieldHeight, gameData.fieldWidth);
     boardObj.board = boardObj.copyBoard(board);
     var best = bot.bestMove(boardObj, 2);
-    columnIndex = best.move;;
+    columnIndex = best.move;
 
-    // Tour Code End
+    // Your Code End
 
 
 
