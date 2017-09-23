@@ -160,7 +160,9 @@ function playTurn(data) {
     switchPlayers();
     updateClients();
   }
-  if (getWinner() > 0) {
+  var winner = getWinner();
+  if (winner > 0) {
+
     win = true;
   }
 }

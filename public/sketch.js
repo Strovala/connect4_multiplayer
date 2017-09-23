@@ -16,7 +16,7 @@ var startBtn = $('#start_game');
 
 startBtn.on('click', function () {
   robot = robotElem.is(':checked');
-  nickname = $('#nick')
+  nickname = $('#nick').val();
   if (nickname == '')
     return;
   startGame = true;
@@ -104,12 +104,20 @@ function botPlay() {
     var columnIndex = legalMoves[randomInt(0, legalMoves.length-1)];
 
     // Your Code
-    var bot = new Bot(me.number);
-    var boardObj = new Board(gameData.fieldHeight, gameData.fieldWidth);
-    boardObj.board = boardObj.copyBoard(board);
-    var best = bot.bestMove(boardObj, 2);
-    columnIndex = best.move;
-
+    console.log(nickname);
+    if (nickname === 'Strovala') {
+      var bot = new Bot(me.number);
+      var boardObj = new Board(gameData.fieldHeight, gameData.fieldWidth);
+      boardObj.board = boardObj.copyBoard(board);
+      var best = bot.bestMove(boardObj, 6);
+      columnIndex = best.move;
+    } else {
+      var bot = new Bot(me.number);
+      var boardObj = new Board(gameData.fieldHeight, gameData.fieldWidth);
+      boardObj.board = boardObj.copyBoard(board);
+      var best = bot.bestMove(boardObj, 2);
+      columnIndex = best.move;
+    }
     // Your Code End
 
 

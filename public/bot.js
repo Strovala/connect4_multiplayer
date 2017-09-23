@@ -53,7 +53,7 @@ Bot.prototype.getMax = function getMax(board, depth) {
       maxMove = moveList[i];
     }
   }
-  return maxMove.value;
+  return maxMove != undefined ? maxMove.value : 0;
 }
 
 // Returns minimal value of legal moves
@@ -80,7 +80,7 @@ Bot.prototype.getMin = function getMin(board, depth) {
       maxMove = moveList[i];
     }
   }
-  return maxMove.value ;
+  return maxMove != undefined ? maxMove.value : 0;
 }
 
 // Returns next four fields towards right
