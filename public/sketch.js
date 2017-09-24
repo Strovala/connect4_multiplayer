@@ -48,7 +48,8 @@ function lateSetUp() {
 }
 
 function update(data) {
-  board = data.board;
+  board = new Board(data.board.height, data.board.width);
+  board.copyFrom(data.board);
   play = data.currentPlayer.number === me.number;
   legalMoves = data.legalMoves;
 }
@@ -58,7 +59,8 @@ function init(client) {
   render = true;
   gameData = client.gameData;
   play = client.play;
-  board = gameData.board;
+  board = new Board(gameData.board.height, gameData.board.width);
+  board.copyFrom(gameData.board);
   me = client.player;
   createCanvas(gameData.canvasWidth, gameData.canvasHeight);
   background(gameData.backgroundColor);
@@ -90,7 +92,7 @@ function showTable() {
       var topLeftY = j * gameData.fieldSize;
       rect(topLeftX, topLeftY, gameData.fieldSize, gameData.fieldSize);
       // Field from board at current position
-      var field = board[j][i];
+      var field = board.board[j][i];
       // If field is not empty, set color to corresponding players color
       if (field > 0) {
         fill(field === 1 ? gameData.player1.color: field === 2 ? gameData.player2.color : 0);
@@ -108,25 +110,25 @@ function botPlay() {
     if (nickname === 'Strovala') {
       var bot = new Bot(me.number);
       var boardObj = new Board(gameData.fieldHeight, gameData.fieldWidth);
-      boardObj.board = boardObj.copyBoard(board);
+      boardObj = board.copy();
       var best = bot.bestMove(boardObj, 6);
       columnIndex = best.move;
     } else if (nickname === 'Krimina') {
       var bot = new Bot(me.number);
       var boardObj = new Board(gameData.fieldHeight, gameData.fieldWidth);
-      boardObj.board = boardObj.copyBoard(board);
+      boardObj = board.copy();
       var best = bot.bestMove(boardObj, 4);
       columnIndex = best.move;
     } else if (nickname === 'Piprina') {
       var bot = new Bot(me.number);
       var boardObj = new Board(gameData.fieldHeight, gameData.fieldWidth);
-      boardObj.board = boardObj.copyBoard(board);
+      boardObj = board.copy();
       var best = bot.bestMove(boardObj, 2);
       columnIndex = best.move;
     } else if (nickname === 'Viprina') {
       var bot = new Bot(me.number);
       var boardObj = new Board(gameData.fieldHeight, gameData.fieldWidth);
-      boardObj.board = boardObj.copyBoard(board);
+      boardObj = board.copy();
       var best = bot.bestMove(boardObj, 0);
       columnIndex = best.move;
     }
@@ -143,7 +145,6 @@ function botPlay() {
 function draw() {
   if (startGame && render) {
     showTable();
-    // wait(1000);
     botPlay();
     // wait(1000);
   }

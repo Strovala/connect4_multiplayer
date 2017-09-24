@@ -12,16 +12,11 @@ Bot.prototype.bestMove = function bestMove(board, depth) {
   var maxMove;
   var moveList = [];
   var legalMoves = board.legalMoves();
-  // console.log('BOARD BEFORE MOVE, DEPTH ' + depth);
-  // console.log(board.toString());
   for (var i = 0; i < legalMoves.length; i++) {
     var move = legalMoves[i];
     var boardCopy = board.copy();
     boardCopy.play(this.me, move);
     var value = this.getMin(boardCopy, depth-1);
-    // console.log('BOARD AFTER MOVE ' + move);
-    // console.log(boardCopy.toString());
-    // console.log('VALUE OF ' + value);
     moveList.push(new Move(move, value));
   }
 
@@ -45,16 +40,11 @@ Bot.prototype.getMax = function getMax(board, depth) {
   var maxMove;
   var moveList = [];
   var legalMoves = board.legalMoves();
-  // console.log('IN MAX, DEPTH ' + depth);
-  // console.log(board.toString());
   for (var i = 0; i < legalMoves.length; i++) {
     var move = legalMoves[i];
     var boardCopy = board.copy();
     boardCopy.play(this.me, move);
     var value = this.getMin(boardCopy, depth-1);
-    // console.log('BOARD AFTER MOVE ' + move);
-    // console.log(boardCopy.toString());
-    // console.log('VALUE OF ' + value);
     moveList.push(new Move(move, value));
   }
 
@@ -77,16 +67,11 @@ Bot.prototype.getMin = function getMin(board, depth) {
   var maxMove;
   var moveList = [];
   var legalMoves = board.legalMoves();
-  // console.log('IN MIN, DEPTH ' + depth);
-  // console.log(board.toString());
   for (var i = 0; i < legalMoves.length; i++) {
     var move = legalMoves[i];
     var boardCopy = board.copy();
     boardCopy.play(this.opponent, move);
     var value = this.getMax(boardCopy, depth-1);
-    // console.log('BOARD AFTER MOVE ' + move);
-    // console.log(boardCopy.toString());
-    // console.log('VALUE OF ' + value);
     moveList.push(new Move(move, value));
   }
 
@@ -218,7 +203,6 @@ Bot.prototype.calculateFourColumns = function calculateFourColumns(four, playerN
   if (cntBlank === 4) {
     return 0;
   }
-  debugger;
   // 1111
   if (cntMe === 4)
     return Math.pow(this.reward, 5);
@@ -226,121 +210,108 @@ Bot.prototype.calculateFourColumns = function calculateFourColumns(four, playerN
   if (cntOpponent === 4)
     return -Math.pow(this.reward, 5);
 
-    if (cntMe === 3) {
-      // 1110 and all permutations
-      if (cntBlank === 1) {
-        // First row of blank field in column where this this blank is
-        var firstBlank = board.findNext(blank[0].column);
-        // Difference between theese two blank fields
-        var difference = firstBlank - blank[0].row;
-
-                console.log(difference + " MINE 3 AND BLANK");
-                console.log(board.toString());
-        // 1110
-        // xxxx
-        if (difference == 0)
-          return Math.pow(this.reward, 3);
-        // 1110
-        // xxx0
-        // xxxx
-        if (difference == 1)
-          return Math.pow(this.reward, 2);
-
-        // Otherwise
-        // 2220
-        // xxx0
-        // xxx0
-        // ....
-        return 0;
-      }
-      // 1112 and all permutations
-      if (cntOpponent === 1) {
-        // First row of blank field in column where this opponent is
-        var firstBlank = board.findNext(opponent[0].column);
-        // If there is no blank fields
-        // ....
-        // xxxx
-        // 1121
-        if (firstBlank < 0) {
-          return 0;
-        }
-        // Difference between opponent and blank
-        var difference = opponent[0].row - firstBlank;
-
-        console.log(difference + " MINE 3 AND OPPONENT");
-        console.log(board.toString());
-        // If there is no blank field right on top of opponent
-
-        // xxxx
-        // 1121
-        if (difference > 1)
-          return 0;
-
-        // Otherwise
-        // xx0x
-        // 1121
-        // TODO: Think about this
-        return -Math.pow(this.reward, 3);
-      }
-    }
-
-    if (cntOpponent === 3) {
-      // 2220 and all permutations
-      if (cntBlank === 1) {
-        // First row of blank field in column where this this blank is
-        var firstBlank = board.findNext(blank[0].column);
-        // Difference between theese two blank fields
-        var difference = firstBlank - blank[0].row;
-        console.log(difference + " OPPONENTS 3 AND BLANK");
-        console.log(board.toString());
-        // 2220
-        // xxxx
-        if (difference == 0)
-          return -Math.pow(this.reward, 3);
-        // 2220
-        // xxx0
-        // xxxx
-        if (difference == 1)
-          return -Math.pow(this.reward, 2);
-
-        // Otherwise
-        // 2220
-        // xxx0
-        // xxx0
-        // ....
-        return 0;
-      }
-      // 2221 and all permutations
-      if (cntMe === 1) {
-        // First row of blank field in column where this I am
-        var firstBlank = board.findNext(me[0].column);
-        // If there is no blank fields
-        // ....
-        // xxxx
-        // 2212
-        if (firstBlank < 0) {
-          return 0;
-        }
-        // Difference between opponent and blank
-        var difference = me[0].row - firstBlank;
-
-        console.log(difference + " OPPONENTS 3 AND ME");
-        console.log(board.toString());
-        // If there is no blank field right on top of opponent
-
-        // xxxx
-        // 2212
-        if (difference > 1)
-          return 0;
-
-        // Otherwise
-        // xx0x
-        // 2212
-        // TODO: Think about this
+  if (cntMe === 3) {
+    // 1110 and all permutations
+    if (cntBlank === 1) {
+      // First row of blank field in column where this this blank is
+      var firstBlank = board.findNext(blank[0].column);
+      // Difference between theese two blank fields
+      var difference = firstBlank - blank[0].row;
+      // 1110
+      // xxxx
+      if (difference == 0)
         return Math.pow(this.reward, 3);
-      }
+      // 1110
+      // xxx0
+      // xxxx
+      if (difference == 1)
+        return Math.pow(this.reward, 2);
+
+      // Otherwise
+      // 2220
+      // xxx0
+      // xxx0
+      // ....
+      return 0;
     }
-    return 0;
+    // 1112 and all permutations
+    if (cntOpponent === 1) {
+      // First row of blank field in column where this opponent is
+      var firstBlank = board.findNext(opponent[0].column);
+      // If there is no blank fields
+      // ....
+      // xxxx
+      // 1121
+      if (firstBlank < 0) {
+        return 0;
+      }
+      // Difference between opponent and blank
+      var difference = opponent[0].row - firstBlank;
+      // If there is no blank field right on top of opponent
+      // xxxx
+      // 1121
+      if (difference > 1)
+        return 0;
+
+      // Otherwise
+      // xx0x
+      // 1121
+      // TODO: Think about this
+      return -Math.pow(this.reward, 3);
+    }
+  }
+
+  if (cntOpponent === 3) {
+    // 2220 and all permutations
+    if (cntBlank === 1) {
+      // First row of blank field in column where this this blank is
+      var firstBlank = board.findNext(blank[0].column);
+      // Difference between theese two blank fields
+      var difference = firstBlank - blank[0].row;
+      // 2220
+      // xxxx
+      if (difference == 0)
+        return -Math.pow(this.reward, 3);
+      // 2220
+      // xxx0
+      // xxxx
+      if (difference == 1)
+        return -Math.pow(this.reward, 2);
+
+      // Otherwise
+      // 2220
+      // xxx0
+      // xxx0
+      // ....
+      return 0;
+    }
+    // 2221 and all permutations
+    if (cntMe === 1) {
+      // First row of blank field in column where this I am
+      var firstBlank = board.findNext(me[0].column);
+      // If there is no blank fields
+      // ....
+      // xxxx
+      // 2212
+      if (firstBlank < 0) {
+        return 0;
+      }
+      // Difference between opponent and blank
+      var difference = me[0].row - firstBlank;
+      // If there is no blank field right on top of opponent
+      // xxxx
+      // 2212
+      if (difference > 1)
+        return 0;
+
+      // Otherwise
+      // xx0x
+      // 2212
+      // TODO: Think about this
+      return Math.pow(this.reward, 3);
+    }
+  }
+  return 0;
 }
 
 // Calculate value of 4 fields
@@ -373,13 +344,14 @@ Bot.prototype.calculateFour = function calculateFour(four, playerNumber, board) 
   if (cntBlank === 4) {
     return 0;
   }
-  debugger;
   // 1111
   if (cntMe === 4)
     return Math.pow(this.reward, 5);
   // 2222
-  if (cntOpponent === 4)
+  if (cntOpponent === 4) {
+    debugger;
     return -Math.pow(this.reward, 5);
+  }
 
   if (cntMe === 3) {
     // 1110 and all permutations
@@ -388,12 +360,10 @@ Bot.prototype.calculateFour = function calculateFour(four, playerNumber, board) 
       var firstBlank = board.findNext(blank[0].column);
       // Difference between theese two blank fields
       var difference = firstBlank - blank[0].row;
-              console.log(difference + " MINE 3 AND BLANK");
-              console.log(board.toString());
       // 1110
       // xxxx
       if (difference == 0)
-        return Math.pow(this.reward, 3);
+        return Math.pow(this.reward, 2);
       // 1110
       // xxx0
       // xxxx
@@ -420,10 +390,7 @@ Bot.prototype.calculateFour = function calculateFour(four, playerNumber, board) 
       }
       // Difference between opponent and blank
       var difference = opponent[0].row - firstBlank;
-              console.log(difference + " MINE 3 AND OPPONENT");
-              console.log(board.toString());
       // If there is no blank field right on top of opponent
-
       // xxxx
       // 1121
       if (difference > 1)
@@ -444,12 +411,10 @@ Bot.prototype.calculateFour = function calculateFour(four, playerNumber, board) 
       var firstBlank = board.findNext(blank[0].column);
       // Difference between theese two blank fields
       var difference = firstBlank - blank[0].row;
-              console.log(difference + " OPPONENT 3 AND BLANK");
-              console.log(board.toString());
       // 2220
       // xxxx
       if (difference == 0)
-        return -Math.pow(this.reward, 3);
+        return -Math.pow(this.reward, 2);
       // 2220
       // xxx0
       // xxxx
@@ -476,8 +441,6 @@ Bot.prototype.calculateFour = function calculateFour(four, playerNumber, board) 
       }
       // Difference between opponent and blank
       var difference = me[0].row - firstBlank;
-              console.log(difference + " OPPONENT 3 AND ME");
-              console.log(board.toString());
       // If there is no blank field right on top of opponent
 
       // xxxx

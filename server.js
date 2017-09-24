@@ -1,4 +1,5 @@
 var express = require('express');
+var Board = require('./board');
 
 // Initialize application
 var app = express();
@@ -12,7 +13,6 @@ console.log("My socket server is running!");
 var socket = require('socket.io');
 var io = socket(server)
 io.sockets.on('connection', newConnection);
-
 
 var fieldWidth = 7, fieldHeight = 6, fieldSize = 100;
 var canvasHeight = fieldHeight * fieldSize, canvasWidth = fieldWidth * fieldSize;
@@ -28,8 +28,8 @@ var player1 = new Player(PLAYER_1, RED);
 var player2 = new Player(PLAYER_2, GREEN);
 var currentPlayer = player1;
 
-// Board represented as matrix of integer (0 - empty; 1 - Player 1; 2 - Player 2)
-var board = initBoard();
+// Board object
+var board = new Board(fieldHeight, fieldWidth);
 
 var clients = [];
 // Init information to client
@@ -47,7 +47,7 @@ gameData = {
 
 function resetData() {
   clients = [];
-  board = initBoard();
+  board = new Board(fieldHeight, fieldWidth);
   gameData.board = board;
 }
 
@@ -82,9 +82,9 @@ function newConnection(socket) {
     socket.emit('start', client);
     clients.push(new ClientSocket(client, socket));
 
+    // When both players are connected
     if (clients.length == 2) {
-      clients[0].client.play = true;
-      win = false;
+      startGame();
       updateClients();
     }
   }
@@ -136,7 +136,7 @@ function updateClients() {
   io.sockets.emit('update', {
     board: board,
     currentPlayer: getCurrentPlayerClientSocket().client.player,
-    legalMoves: legalMoves()
+    legalMoves: board.legalMoves()
   });
 }
 
@@ -147,116 +147,37 @@ function switchPlayers() {
   opponent.client.play = true;
 }
 
+// Called when both players are connected
+// Player who connected first plays first
+function startGame() {
+  clients[0].client.play = true;
+  win = false;
+}
+
+// Called when somebody wins or no legal moves are left
+function endGame() {
+  win = true;
+  var current = getCurrentPlayerClientSocket();
+  var opponent = getOpponentClientSocket();
+  current.client.play = false;
+  opponent.client.play = false;
+}
+
 // Play turn that client send as columnIndex
 function playTurn(data) {
-  if (win) return;
   var columnIndex = data.columnIndex;
-  var rowIndex = findNext(columnIndex);
+  var rowIndex = board.findNext(columnIndex);
   // If he can put at that column, otherwise he still must play turn
   if (rowIndex >= 0) {
     var current = getCurrentPlayerClientSocket().client.player;
-    updateBoard(rowIndex, columnIndex, current.number);
+    board.update(rowIndex, columnIndex, current.number);
 
     switchPlayers();
     updateClients();
   }
-  var winner = getWinner();
+  var winner = board.getWinner();
   if (winner > 0) {
-
-    win = true;
+    endGame();
+    updateClients();
   }
-}
-
-function legalMoves() {
-  var legal = []
-  for (var i = 0; i < gameData.fieldWidth; i++) {
-    if (findNext(i) >= 0)
-      legal.push(i);
-  }
-  return legal;
-}
-
-function initBoard() {
-  var mat = new Array(fieldHeight);
-  for (var i = 0; i < fieldHeight; i++) {
-    mat[i] = new Array(fieldWidth).fill(0);
-  }
-  return mat;
-}
-
-// Search for fisr empty cell in column given by columnIndex
-function findNext(columnIndex) {
-  for (var rowIndex = fieldHeight-1; rowIndex > -1; rowIndex--) {
-    if (board[rowIndex][columnIndex] === 0)
-      return rowIndex;
-    }
-  return -1;
-}
-
-function updateBoard(j, i, player) {
-  board[j][i] = player;
-}
-
-function valid(row, column) {
-   return row < 0 || column < 0 || row >= fieldHeight || column >= fieldWidth ? 0 : board[row][column];
-}
-
-function connectedRows() {
-  for (var j = 0; j < fieldHeight; j++)
-    for (var i = 0; i < fieldWidth; i++)
-      if (
-        valid(j, i) !== 0 &&
-        valid(j, i) === valid(j, i+1) &&
-        valid(j, i) === valid(j, i+2) &&
-        valid(j, i) === valid(j, i+3)
-      )
-        return board[j][i];
-  return 0;
-}
-
-function connectedColumns() {
-  for (var j = 0; j < fieldHeight; j++)
-    for (var i = 0; i < fieldWidth; i++)
-      if (
-        valid(j, i) !== 0 &&
-        valid(j, i) === valid(j+1, i) &&
-        valid(j, i) === valid(j+2, i) &&
-        valid(j, i) === valid(j+3, i)
-      )
-        return board[j][i];
-  return 0;
-}
-
-function connectedDiagonals() {
-  for (var j = 0; j < fieldHeight; j++)
-    for (var i = 0; i < fieldWidth; i++)
-      for (var k = -1; k <= 1; k+=2)
-      if (
-        valid(j, i) !== 0 &&
-        valid(j, i) === valid(j+k*1, i+1) &&
-        valid(j, i) === valid(j+k*2, i+2) &&
-        valid(j, i) === valid(j+k*3, i+3)
-      )
-        return board[j][i];
-  return 0;
-}
-
-// Return winner if there is four in rows, columns or diagonals
-function getWinner() {
-  // rows
-  var player = connectedRows();
-  if (player > 0)
-    return player;
-
-  // columns
-  var player = connectedColumns();
-  if (player > 0)
-    return player;
-
-  // diagonals
-  var player = connectedDiagonals();
-  if (player > 0)
-    return player;
-
-  return 0;
 }

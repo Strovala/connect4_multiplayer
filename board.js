@@ -21,21 +21,20 @@ Board.prototype.init = function init() {
 // Returning new object
 Board.prototype.copy = function copy() {
   var boardCopy = new Board(this.height, this.width);
-  boardCopy.copyFrom(this);
+  boardCopy.board = this.copyBoard(this.board);
   return boardCopy;
 }
 
 // Coping primitive board given by parameter
 // Returning matrix of integer
-Board.prototype.copyFrom = function copyFrom(board) {
-  this.height = board.height;
-  this.width = board.width;
-  this.board = this.init();
+Board.prototype.copyBoard = function copyBoard(board) {
+  var mat = this.init();
 
   for(var i = 0; i < this.height; i++)
     for(var j = 0; j < this.width; j++)
-      this.board[i][j] = board.board[i][j];
+      mat[i][j] = board[i][j];
 
+  return mat;
 }
 
 // Updates the matrix field with row and column
@@ -148,3 +147,5 @@ Board.prototype.toString = function toString() {
 
   return boardView;
 }
+
+module.exports = Board;
