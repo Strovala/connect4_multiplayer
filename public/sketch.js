@@ -115,7 +115,19 @@ function botPlay() {
       var bot = new Bot(me.number);
       var boardObj = new Board(gameData.fieldHeight, gameData.fieldWidth);
       boardObj.board = boardObj.copyBoard(board);
+      var best = bot.bestMove(boardObj, 4);
+      columnIndex = best.move;
+    } else if (nickname === 'Piprina') {
+      var bot = new Bot(me.number);
+      var boardObj = new Board(gameData.fieldHeight, gameData.fieldWidth);
+      boardObj.board = boardObj.copyBoard(board);
       var best = bot.bestMove(boardObj, 2);
+      columnIndex = best.move;
+    } else if (nickname === 'Viprina') {
+      var bot = new Bot(me.number);
+      var boardObj = new Board(gameData.fieldHeight, gameData.fieldWidth);
+      boardObj.board = boardObj.copyBoard(board);
+      var best = bot.bestMove(boardObj, 0);
       columnIndex = best.move;
     }
     // Your Code End
