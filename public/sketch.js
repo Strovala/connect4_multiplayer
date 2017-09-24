@@ -1,5 +1,5 @@
 var socket;
-var gameData;
+var gameSettings;
 var me, board;
 var myTurn = false;
 var render = false;
@@ -12,7 +12,6 @@ var formNick = $('.form_nick');
 var nickElem = $('#nick');
 var robotElem = $('#robot');
 var startBtn = $('#start_game');
-
 
 startBtn.on('click', function () {
   robot = robotElem.is(':checked');
@@ -35,7 +34,7 @@ function lateSetUp() {
   socket = io.connect('http://localhost:3000');
   socket.on('start', init);
   socket.on('update', update);
-  socket.on('disconnect_req', function() {
+  socket.on('disconnect_reqest', function() {
     console.log('Ordered dissconection');
     socket.emit('disconnect');
     startGame = false;
@@ -50,20 +49,27 @@ function lateSetUp() {
 function update(data) {
   board = new Board(data.board.height, data.board.width);
   board.copyFrom(data.board);
-  play = data.currentPlayer.number === me.number;
-  legalMoves = data.legalMoves;
+  // Determine is it mine turn
+  play = data.board.turn.number == me.number;
+  legalMoves = board.legalMoves();
 }
 
 // Initialize
-function init(client) {
-  render = true;
-  gameData = client.gameData;
-  play = client.play;
-  board = new Board(gameData.board.height, gameData.board.width);
-  board.copyFrom(gameData.board);
+function init(data) {
+  var client = data.client;
+  gameSettings = data.gameSettings;
+  // Init board
+  board = new Board(data.board.height, data.board.width);
+  board.copyFrom(data.board);
+  // Get player object
   me = client.player;
-  createCanvas(gameData.canvasWidth, gameData.canvasHeight);
-  background(gameData.backgroundColor);
+  // Determine is it mine turn
+  play = data.board.turn.number == me.number;
+  // Set up canvas
+  createCanvas(gameSettings.canvasWidth, gameSettings.canvasHeight);
+  background(gameSettings.backgroundColor);
+  // Start rendering when succesfull start
+  render = true;
 }
 
 function randomInt(min, max) {
@@ -73,9 +79,9 @@ function randomInt(min, max) {
 // Send column index if it is your turn
 function mousePressed() {
   if (play && robot == false) {
-    var columnIndex = int(mouseX / gameData.fieldSize);
+    var column = int(mouseX / gameSettings.fieldSize);
     socket.emit('turn', {
-      columnIndex: columnIndex
+      column: column
     });
   }
 }
@@ -83,61 +89,61 @@ function mousePressed() {
 
 // Code for showing table
 function showTable() {
-  for (var j = 0; j < gameData.fieldHeight; j++)
-    for (var i = 0; i < gameData.fieldWidth; i++) {
+  for (var j = 0; j < gameSettings.fieldHeight; j++)
+    for (var i = 0; i < gameSettings.fieldWidth; i++) {
       // Set color to white, for drawing rectangle
-      fill(gameData.backgroundColor);
+      fill(gameSettings.backgroundColor);
       // Top left pixel, for drawing
-      var topLeftX = i * gameData.fieldSize;
-      var topLeftY = j * gameData.fieldSize;
-      rect(topLeftX, topLeftY, gameData.fieldSize, gameData.fieldSize);
+      var topLeftX = i * gameSettings.fieldSize;
+      var topLeftY = j * gameSettings.fieldSize;
+      rect(topLeftX, topLeftY, gameSettings.fieldSize, gameSettings.fieldSize);
       // Field from board at current position
       var field = board.board[j][i];
       // If field is not empty, set color to corresponding players color
       if (field > 0) {
-        fill(field === 1 ? gameData.player1.color: field === 2 ? gameData.player2.color : 0);
-        ellipse(topLeftX, topLeftY, gameData.fieldSize, gameData.fieldSize);
+        fill(field === 1 ? gameSettings.player1.color: field === 2 ? gameSettings.player2.color : 0);
+        ellipse(topLeftX, topLeftY, gameSettings.fieldSize, gameSettings.fieldSize);
       }
     }
 }
 
 function botPlay() {
   if (play && robot) {
-    var columnIndex = legalMoves[randomInt(0, legalMoves.length-1)];
+    var column = legalMoves[randomInt(0, legalMoves.length-1)];
 
     // Your Code
     console.log(nickname);
     if (nickname === 'Strovala') {
       var bot = new Bot(me.number);
-      var boardObj = new Board(gameData.fieldHeight, gameData.fieldWidth);
+      var boardObj = new Board(gameSettings.fieldHeight, gameSettings.fieldWidth);
       boardObj = board.copy();
       var best = bot.bestMove(boardObj, 6);
-      columnIndex = best.move;
+      column = best.move;
     } else if (nickname === 'Krimina') {
       var bot = new Bot(me.number);
-      var boardObj = new Board(gameData.fieldHeight, gameData.fieldWidth);
+      var boardObj = new Board(gameSettings.fieldHeight, gameSettings.fieldWidth);
       boardObj = board.copy();
       var best = bot.bestMove(boardObj, 4);
-      columnIndex = best.move;
+      column = best.move;
     } else if (nickname === 'Piprina') {
       var bot = new Bot(me.number);
-      var boardObj = new Board(gameData.fieldHeight, gameData.fieldWidth);
+      var boardObj = new Board(gameSettings.fieldHeight, gameSettings.fieldWidth);
       boardObj = board.copy();
       var best = bot.bestMove(boardObj, 2);
-      columnIndex = best.move;
+      column = best.move;
     } else if (nickname === 'Viprina') {
       var bot = new Bot(me.number);
-      var boardObj = new Board(gameData.fieldHeight, gameData.fieldWidth);
+      var boardObj = new Board(gameSettings.fieldHeight, gameSettings.fieldWidth);
       boardObj = board.copy();
       var best = bot.bestMove(boardObj, 0);
-      columnIndex = best.move;
+      column = best.move;
     }
     // Your Code End
 
 
 
     socket.emit('turn', {
-      columnIndex: columnIndex
+      column: column
     });
   }
 }

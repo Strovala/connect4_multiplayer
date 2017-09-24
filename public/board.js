@@ -5,6 +5,7 @@ function Board(height, width) {
   this.height = height;
   this.width = width;
   this.board = this.init();
+  this.turn = null;
 }
 
 // Creating matrix of integer and filling it with zeros
@@ -30,6 +31,7 @@ Board.prototype.copy = function copy() {
 Board.prototype.copyFrom = function copyFrom(board) {
   this.height = board.height;
   this.width = board.width;
+  this.turn = board.turn;
   this.board = this.init();
 
   for(var i = 0; i < this.height; i++)
