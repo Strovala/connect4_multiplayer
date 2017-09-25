@@ -34,9 +34,16 @@ Board.prototype.copyFrom = function copyFrom(board) {
   this.turn = board.turn;
   this.board = this.init();
 
-  for(var i = 0; i < this.height; i++)
-    for(var j = 0; j < this.width; j++)
-      this.board[i][j] = board.board[i][j];
+  // for(var i = 0; i < this.height; i++)
+  //   for(var j = 0; j < this.width; j++)
+  //     this.board[i][j] = board.board[i][j];
+
+  // Coping the board
+  this.board = board.board.map(function (row) {
+    return row.map(function(field) {
+      return field;
+    });
+  });
 
 }
 
