@@ -157,3 +157,60 @@ Board.prototype.toString = function toString() {
 
   return boardView;
 }
+
+// Neural network learning purpose
+// 126 inputs 3 for each field
+Board.prototype.getInput = function getInput() {
+  var input = [];
+  for(var i = 0; i < this.height; i++) {
+    for(var j = 0; j < this.width; j++) {
+      var field =  this.board[i][j];
+      for (var k = 0; k < 3; k++) {
+        if (field === 0)
+          input.push(1);
+        else
+          input.push(0);
+        if (field === 1)
+          input.push(1);
+        else
+          input.push(0);
+        if (field === 2)
+          input.push(1);
+        else
+          input.push(0);
+      }
+    }
+  }
+
+  return input;
+}
+
+
+
+// Returns if move is legal
+Board.prototype.isLegal = function isLegal(move) {
+  if (this.findNext(move) >= 0)
+    return true;
+  return false;
+}
+
+Board.prototype.getMoveFromOutput = function getMoveFromOutput(output) {
+  while (1) {
+    var max = output[0];
+    var maxI = 0;
+
+    for (var i = 1; i < output.length; i++) {
+      if (output[i] > max) {
+        max = output[i];
+        maxI = i;
+      }
+    }
+
+    if (!this.isLegal(maxI)) {
+      output[maxI] = -Infinity;
+    } else {
+      return maxI;
+    }
+
+  }
+}

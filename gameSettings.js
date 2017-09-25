@@ -11,6 +11,7 @@ function GameSettings() {
   this.BLUE = 'blue';
   this.BLACK = 'black';
 
+  this.BLANK = 0;
   this.PLAYER_1 = 1;
   this.PLAYER_2 = 2;
   this.SPECTATOR = 3;

@@ -2,6 +2,8 @@ const express = require('express');
 const Socket = require('./socket');
 const Client = require('./client');
 const Server = require('./server');
+// Neural network learning puropses
+const Board = require('./board');
 
 // Initialize application
 var app = express();
@@ -17,7 +19,7 @@ console.log("My socket server is running!");
 var socket = require('socket.io');
 var io = socket(ioServer);
 
-io.sockets.on('connection', function (socket) {
+io.sockets.on('connection', function(socket) {
   console.log("New connection : " + socket.id);
   var client;
   // Add clients until there are 2 of them
@@ -58,7 +60,20 @@ io.sockets.on('connection', function (socket) {
 
   // When client plays turn
   socket.on('turn', function(data) {
-    server.playTurn(data.column);
+    var winner = server.game.winner();
+    if (winner > 0) {
+      // After finishing game start a new one
+      // For purposes of training neural network
+      var turnsNumber = server.game.getTurnsNumber();
+      server.game.board = new Board(server.game.gameSettings);
+      server.game.start();
+      io.sockets.emit('start_new', {
+        turns: turnsNumber,
+        winner: winner
+      });
+    } else {
+      server.playTurn(data.column);
+    }
     updateClients();
   });
 });

@@ -46,9 +46,15 @@ Game.prototype.play = function play(column) {
     // Switch turn
     this.switchTurn();
   }
-  // If someone won call end game
-  if (this.winner() > 0)
-    this.end();
+
+  // Commented for puropses of neural network learning
+  // // If someone won call end game
+  // if (this.winner() > 0)
+  //   this.end();
+}
+
+Game.prototype.getTurnsNumber = function getTurnsNumber() {
+  return this.board.getTurnsNumber();
 }
 
 Game.prototype.winner = function winner() {

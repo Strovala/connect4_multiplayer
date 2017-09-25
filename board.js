@@ -6,6 +6,8 @@ function Board(gameSettings) {
   this.width = gameSettings.fieldWidth;
   this.board = this.initBoard();
   this.turn = gameSettings.spectator;
+
+  this.gameSettings = gameSettings;
 }
 
 // Creating matrix of integer and filling it with zeros
@@ -140,7 +142,25 @@ Board.prototype.getWinner = function getWinner() {
   if (player > 0)
     return player;
 
+  if (this.legalMoves().length === 0)
+    return this.gameSettings.spectator.number;
+
   return 0;
+}
+
+// Gets number of turns by counting all non blank spaces and
+// dividing by 2
+Board.prototype.getTurnsNumber = function getTurnsNumber() {
+  var nonBlanks = 0;
+
+  for (var i = 0; i < this.height; i++)
+    for (var j = 0; j < this.width; j++) {
+      var field = this.board[i][j];
+      if (field !== this.gameSettings.BLANK)
+        nonBlanks++;
+    }
+
+  return Math.floor(nonBlanks / 2);
 }
 
 // Returns string representation of board

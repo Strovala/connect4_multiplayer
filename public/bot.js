@@ -348,10 +348,8 @@ Bot.prototype.calculateFour = function calculateFour(four, playerNumber, board) 
   if (cntMe === 4)
     return Math.pow(this.reward, 5);
   // 2222
-  if (cntOpponent === 4) {
-    debugger;
+  if (cntOpponent === 4)
     return -Math.pow(this.reward, 5);
-  }
 
   if (cntMe === 3) {
     // 1110 and all permutations

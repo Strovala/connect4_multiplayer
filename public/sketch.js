@@ -13,6 +13,10 @@ var nickElem = $('#nick');
 var robotElem = $('#robot');
 var startBtn = $('#start_game');
 
+var net = new Neural.Net([126, 126, 126, 7]);
+// var net = new Neural.Net([2, 3, 2]);
+net.setRandomWeights();
+
 startBtn.on('click', function () {
   robot = robotElem.is(':checked');
   nickname = $('#nick').val();
@@ -34,6 +38,7 @@ function lateSetUp() {
   socket = io.connect('http://localhost:3000');
   socket.on('start', init);
   socket.on('update', update);
+  socket.on('start_new', newGame);
   socket.on('disconnect_reqest', function() {
     console.log('Ordered dissconection');
     socket.emit('disconnect');
@@ -70,6 +75,17 @@ function init(data) {
   background(gameSettings.backgroundColor);
   // Start rendering when succesfull start
   render = true;
+}
+
+function newGame(data) {
+  var winner = data.winner;
+  var turns = data.turns;
+
+  if (nickname == "Krimina") {
+    nickname = "Piprina";
+  } else if (nickname == "Piprina") {
+    nickname = "Krimina";
+  }
 }
 
 function randomInt(min, max) {
@@ -111,35 +127,41 @@ function botPlay() {
   if (play && robot) {
     var column = legalMoves[randomInt(0, legalMoves.length-1)];
 
-    // Your Code
-    console.log(nickname);
-    if (nickname === 'Strovala') {
-      var bot = new Bot(me.number);
-      var boardObj = new Board(gameSettings.fieldHeight, gameSettings.fieldWidth);
-      boardObj = board.copy();
-      var best = bot.bestMove(boardObj, 6);
-      column = best.move;
-    } else if (nickname === 'Krimina') {
-      var bot = new Bot(me.number);
-      var boardObj = new Board(gameSettings.fieldHeight, gameSettings.fieldWidth);
-      boardObj = board.copy();
-      var best = bot.bestMove(boardObj, 4);
-      column = best.move;
-    } else if (nickname === 'Piprina') {
-      var bot = new Bot(me.number);
-      var boardObj = new Board(gameSettings.fieldHeight, gameSettings.fieldWidth);
-      boardObj = board.copy();
-      var best = bot.bestMove(boardObj, 2);
-      column = best.move;
-    } else if (nickname === 'Viprina') {
-      var bot = new Bot(me.number);
-      var boardObj = new Board(gameSettings.fieldHeight, gameSettings.fieldWidth);
-      boardObj = board.copy();
-      var best = bot.bestMove(boardObj, 0);
-      column = best.move;
+    if (legalMoves.length !== 0) {
+      // Your Code
+      console.log(nickname);
+      if (nickname === 'Strovala') {
+        var bot = new Bot(me.number);
+        var boardObj = new Board(gameSettings.fieldHeight, gameSettings.fieldWidth);
+        boardObj = board.copy();
+        var best = bot.bestMove(boardObj, 6);
+        column = best.move;
+      } else if (nickname === 'Krimina') {
+        var bot = new Bot(me.number);
+        var boardObj = new Board(gameSettings.fieldHeight, gameSettings.fieldWidth);
+        boardObj = board.copy();
+        var best = bot.bestMove(boardObj, 4);
+        column = best.move;
+      } else if (nickname === 'Piprina') {
+        var bot = new Bot(me.number);
+        var boardObj = new Board(gameSettings.fieldHeight, gameSettings.fieldWidth);
+        boardObj = board.copy();
+        var best = bot.bestMove(boardObj, 2);
+        column = best.move;
+      } else if (nickname === 'Viprina') {
+        var bot = new Bot(me.number);
+        var boardObj = new Board(gameSettings.fieldHeight, gameSettings.fieldWidth);
+        boardObj = board.copy();
+        var best = bot.bestMove(boardObj, 0);
+        column = best.move;
+      } else if (nickname === 'Net') {
+        var boardObj = new Board(gameSettings.fieldHeight, gameSettings.fieldWidth);
+        boardObj = board.copy();
+        var out = net.run(boardObj.getInput());
+        column = boardObj.getMoveFromOutput(out);
+      }
+      // Your Code End
     }
-    // Your Code End
-
 
 
     socket.emit('turn', {
