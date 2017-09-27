@@ -5,10 +5,10 @@ var Neural = (function (Neural) {
     this.inputs = [];
     // The value this neuron will be sending out
     this.value = 0;
-    // The weights on each neuron on next layer
-    this.weights = [];
     // Neurons that this neuron should send data to
     this.receivers = receivers || [];
+    // The weights on each neuron on next layer
+    this.weights = new Array(this.receivers.length);
     // Bias for this neuron
     this.bias = 0.3;
   }
@@ -36,12 +36,14 @@ var Neural = (function (Neural) {
     });
   }
 
-  // Sets wights in [-1, 1)
-  Neuron.prototype.setRandomWeights = function Neuron_setRandomWeights() {
-      this.weights = new Array(this.receivers.length);
+  Neuron.prototype.setWeights = function Neuron_setWeights(weights) {
       for (var i = 0; i < this.weights.length; i++) {
-        this.weights[i] = Math.random() * 2 - 1;
+        this.weights[i] = weights != undefined ? weights[i] : Math.random()*2 - 1;
       }
+  }
+
+  Neuron.prototype.getWeights = function Neuron_getWeights() {
+      return this.weights;
   }
 
   Neural.Neuron = Neuron;
@@ -66,10 +68,16 @@ var Neural = (function (Neural) {
     });
   }
 
-  Layer.prototype.setRandomWeights = function Layer_setRandomWeights() {
+  Layer.prototype.setWeights = function Layer_setWeights(weights) {
     for (var i = 0; i < this.neurons.length; i++) {
-      this.neurons[i].setRandomWeights();
+      this.neurons[i].setWeights(weights != undefined ? weights[i] : undefined);
     }
+  }
+
+  Layer.prototype.getWeights = function Layer_getWeights() {
+    return this.neurons.map(function (neuron) {
+      return neuron.getWeights();
+    });
   }
 
   Neural.Layer = Layer;
@@ -92,10 +100,21 @@ var Neural = (function (Neural) {
     }
   }
 
-  Network.prototype.setRandomWeights = function Network_setRandomWeights() {
+  Network.prototype.setWeights = function Network_setWeights(weights) {
     for (var i = 0; i < this.layers.length; i++) {
-      this.layers[i].setRandomWeights();
+        this.layers[i].setWeights(weights != undefined ? weights[i] : undefined);
     }
+  }
+
+  Network.prototype.getWeights = function Network_getWeights() {
+    return this.layers.map(function (layer) {
+      return layer.getWeights();
+    });
+  }
+
+  // Sets wights in [-1, 1)
+  Network.prototype.setRandomWeights = function Network_setRandomWeights() {
+    this.setWeights();
   }
 
   Network.prototype.run = function Network_run(inputs) {
@@ -117,7 +136,7 @@ var Neural = (function (Neural) {
     var outputLayerNeurons = this.layers[this.layers.length-1].neurons;
     output = outputLayerNeurons.map(function (neuron) {
       return neuron.value;
-    })
+    });
     return output;
   }
 

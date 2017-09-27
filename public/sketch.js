@@ -13,8 +13,8 @@ var nickElem = $('#nick');
 var robotElem = $('#robot');
 var startBtn = $('#start_game');
 
-var net = new Neural.Network([126, 126, 126, 7]);
-net.setRandomWeights();
+var gen = new Genetic.Population(5);
+console.log(gen.individuals[0].network.getWeights());
 
 startBtn.on('click', function () {
   robot = robotElem.is(':checked');
