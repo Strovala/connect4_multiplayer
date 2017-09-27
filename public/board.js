@@ -165,20 +165,18 @@ Board.prototype.getInput = function getInput() {
   for(var i = 0; i < this.height; i++) {
     for(var j = 0; j < this.width; j++) {
       var field =  this.board[i][j];
-      for (var k = 0; k < 3; k++) {
-        if (field === 0)
-          input.push(1);
-        else
-          input.push(0);
-        if (field === 1)
-          input.push(1);
-        else
-          input.push(0);
-        if (field === 2)
-          input.push(1);
-        else
-          input.push(0);
-      }
+      if (field === 0)
+        input.push(1);
+      else
+        input.push(0);
+      if (field === 1)
+        input.push(1);
+      else
+        input.push(0);
+      if (field === 2)
+        input.push(1);
+      else
+        input.push(0);
     }
   }
 

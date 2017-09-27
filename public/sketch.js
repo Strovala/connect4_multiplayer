@@ -13,8 +13,7 @@ var nickElem = $('#nick');
 var robotElem = $('#robot');
 var startBtn = $('#start_game');
 
-var net = new Neural.Net([126, 126, 126, 7]);
-// var net = new Neural.Net([2, 3, 2]);
+var net = new Neural.Network([126, 126, 126, 7]);
 net.setRandomWeights();
 
 startBtn.on('click', function () {
@@ -157,6 +156,7 @@ function botPlay() {
       } else if (nickname === 'Net') {
         var boardObj = new Board(gameSettings.fieldHeight, gameSettings.fieldWidth);
         boardObj = board.copy();
+
         var out = net.run(boardObj.getInput());
         column = boardObj.getMoveFromOutput(out);
       }
