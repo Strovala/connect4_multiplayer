@@ -14,7 +14,13 @@ var robotElem = $('#robot');
 var startBtn = $('#start_game');
 
 var gen = new Genetic.Population(5);
-console.log(gen.individuals[0].network.getWeights());
+gen.individuals[3].wins = 2;
+gen.individuals[1].wins = 1;
+gen.individuals[3].turns = 2;
+gen.individuals[1].turns = 1;
+
+gen.evaluate();
+console.log(gen);
 
 startBtn.on('click', function () {
   robot = robotElem.is(':checked');
