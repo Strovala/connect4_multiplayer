@@ -36,6 +36,20 @@ io.sockets.on('connection', function(socket) {
     // When both players are connected
     if (Object.keys(server.clients).length == 2) {
       server.game.start();
+
+      var fs = require('fs');
+      var best = "bst";
+      var that = this;
+      fs.readFile("best", 'utf8', function(err, data) {
+          if(err) {
+              return console.log(err);
+          }
+
+          socket.emit('best_set', {
+            best: data
+          });
+      });
+
       updateClients();
     }
   }
@@ -57,6 +71,19 @@ io.sockets.on('connection', function(socket) {
       io.sockets.emit('disconnect_reqest');
     }
   });
+
+  socket.on('best', function(data) {
+    var best = JSON.stringify(data.best);
+
+    var fs = require('fs');
+    fs.writeFile("best", best, function(err) {
+        if(err) {
+            return console.log(err);
+        }
+
+        console.log("The file was saved!");
+    });
+  })
 
   // When client plays turn
   socket.on('turn', function(data) {

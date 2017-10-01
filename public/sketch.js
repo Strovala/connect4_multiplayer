@@ -13,13 +13,11 @@ var nickElem = $('#nick');
 var robotElem = $('#robot');
 var startBtn = $('#start_game');
 
-var gen = new Genetic.Population(5, [3, 3, 3, 2]);
-gen.individuals[3].wins = 2;
-gen.individuals[1].wins = 1;
-gen.individuals[3].turns = 2;
-gen.individuals[1].turns = 1;
-gen.nextGeneration();
-console.log(gen);
+var gen = new Genetic.Population(5, [126, 50, 7]);
+var net = gen.individuals[0].network;
+var netSet = new Neural.Network([126, 50, 7]);
+var currNetwork = 0;
+var gamesPlayed = 0;
 
 startBtn.on('click', function () {
   robot = robotElem.is(':checked');
@@ -43,6 +41,10 @@ function lateSetUp() {
   socket.on('start', init);
   socket.on('update', update);
   socket.on('start_new', newGame);
+  socket.on('best_set', function (data) {
+    var best = JSON.parse(data.best);
+    netSet.setWeights(best);
+  })
   socket.on('disconnect_reqest', function() {
     console.log('Ordered dissconection');
     socket.emit('disconnect');
@@ -82,13 +84,53 @@ function init(data) {
 }
 
 function newGame(data) {
+  gamesPlayed++;
   var winner = data.winner;
   var turns = data.turns;
+  if (nickname == "Net") {
+    if (me.number === winner) {
+      gen.individuals[currNetwork].wins++;
+      console.log("Network won");
+    }
 
-  if (nickname == "Krimina") {
-    nickname = "Piprina";
-  } else if (nickname == "Piprina") {
-    nickname = "Krimina";
+    gen.individuals[currNetwork].turns += turns;
+    console.log(gen.individuals[currNetwork].turns);
+
+    if (gamesPlayed % 2 == 0) {
+      nickname = "Piprina";
+    } else {
+      nickname = "Piprina";
+    }
+  } else {
+    var opponentNumber = me.number == 1 ? 2 : 1;
+
+    if (opponentNumber === winner) {
+      gen.individuals[currNetwork].wins++;
+      console.log("Network won");
+    }
+
+    gen.individuals[currNetwork].turns += turns;
+    console.log(gen.individuals[currNetwork].turns);
+
+    if (gamesPlayed % 2 == 0) {
+      nickname = "Net";
+      currNetwork++;
+      if (currNetwork >= 5) {
+        gen.nextGeneration();
+        var bestWeights = gen.individuals[0].network.getWeights();
+        socket.emit('best', {
+          best: bestWeights
+        })
+        gen.individuals.forEach(function (individual) {
+          individual.wins = 0;
+          individual.turns = 0;
+        })
+        currNetwork = 0;
+      }
+      net = gen.individuals[currNetwork].network;
+    } else {
+      nickname = "Net";
+    }
   }
 }
 
@@ -163,6 +205,12 @@ function botPlay() {
         boardObj = board.copy();
 
         var out = net.run(boardObj.getInput());
+        column = boardObj.getMoveFromOutput(out);
+      } else if (nickname === 'Netset') {
+        var boardObj = new Board(gameSettings.fieldHeight, gameSettings.fieldWidth);
+        boardObj = board.copy();
+
+        var out = netSet.run(boardObj.getInput());
         column = boardObj.getMoveFromOutput(out);
       }
       // Your Code End
