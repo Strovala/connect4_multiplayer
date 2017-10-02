@@ -13,9 +13,9 @@ var nickElem = $('#nick');
 var robotElem = $('#robot');
 var startBtn = $('#start_game');
 
-var gen = new Genetic.Population(5, [126, 50, 7]);
+var gen = new Genetic.Population(5, [126, 50, 50, 7]);
 var net = gen.individuals[0].network;
-var netSet = new Neural.Network([126, 50, 7]);
+var netSet = new Neural.Network([126, 50, 50, 7]);
 var currNetwork = 0;
 var gamesPlayed = 0;
 
@@ -94,12 +94,12 @@ function newGame(data) {
     }
 
     gen.individuals[currNetwork].turns += turns;
-    console.log(gen.individuals[currNetwork].turns);
+    console.log(gen.individuals[currNetwork].turns + " net " + gen.individuals[currNetwork].id);
 
     if (gamesPlayed % 2 == 0) {
-      nickname = "Piprina";
+      nickname = "Krimina";
     } else {
-      nickname = "Piprina";
+      nickname = "Krimina";
     }
   } else {
     var opponentNumber = me.number == 1 ? 2 : 1;
@@ -110,7 +110,7 @@ function newGame(data) {
     }
 
     gen.individuals[currNetwork].turns += turns;
-    console.log(gen.individuals[currNetwork].turns);
+    console.log(gen.individuals[currNetwork].turns + " net " + gen.individuals[currNetwork].id);
 
     if (gamesPlayed % 2 == 0) {
       nickname = "Net";
@@ -127,7 +127,16 @@ function newGame(data) {
         })
         currNetwork = 0;
       }
-      net = gen.individuals[currNetwork].network;
+      function clone(obj) {
+        if (null == obj || "object" != typeof obj) return obj;
+        var copy = new obj.constructor(obj.sizes);
+        for (var attr in obj) {
+            if (obj.hasOwnProperty(attr)) copy[attr] = obj[attr];
+        }
+        return copy;
+      }
+      debugger;
+      net = clone(gen.individuals[currNetwork].network);
     } else {
       nickname = "Net";
     }
@@ -220,6 +229,8 @@ function botPlay() {
     socket.emit('turn', {
       column: column
     });
+
+    play = false;
   }
 }
 

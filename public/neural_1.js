@@ -83,6 +83,7 @@ var Neural = (function (Neural) {
   Neural.Layer = Layer;
 
   function Network(sizes) {
+    this.sizes = sizes;
     this.layers = new Array(sizes.length);
     for (var i = sizes.length-1; i >= 0; i--) {
       if (i < sizes.length - 1) {
