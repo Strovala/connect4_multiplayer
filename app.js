@@ -16,7 +16,7 @@ console.log("My socket server is running!");
 // Initialize sockets
 var socket = require('socket.io');
 var io = socket(ioServer);
-
+var game = 0;
 io.sockets.on('connection', function (socket) {
   console.log("New connection : " + socket.id);
   var client;
@@ -55,10 +55,23 @@ io.sockets.on('connection', function (socket) {
       io.sockets.emit('disconnect_reqest');
     }
   });
-
+  
   // When client plays turn
   socket.on('turn', function(data) {
+    var color = server.game.board.turn.number == 1 ? "RED" : "GREEN";
+    console.log(color + " -> " + data.column);
     server.playTurn(data.column);
+    var winner = server.game.winner();
+    if (winner > 0) {
+      console.log("NEW GAME");
+      server.newGame();
+      server.game.start();
+      if (game % 2 == 0)
+        server.game.board.turn = server.game.gameSettings.player2;
+      else
+        server.game.board.turn = server.game.gameSettings.player1;
+      game++;
+    }
     updateClients();
   });
 });

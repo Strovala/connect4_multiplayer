@@ -10,6 +10,11 @@ function Server() {
   this.assignedPlayer = null;
 }
 
+// Sets up a new game
+Server.prototype.newGame = function newGame(column) {
+  this.game = new Game(gameSettings);
+}
+
 // Play turn that client send as column
 Server.prototype.playTurn = function playTurn(column) {
   this.game.play(column);

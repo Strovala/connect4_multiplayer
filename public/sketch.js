@@ -51,6 +51,7 @@ function update(data) {
   board.copyFrom(data.board);
   // Determine is it mine turn
   play = data.board.turn.number == me.number;
+  console.log(play);
   legalMoves = board.legalMoves();
 }
 
@@ -141,10 +142,12 @@ function botPlay() {
     // Your Code End
 
 
-
+    console.log(nickname + " -> " + column);
     socket.emit('turn', {
       column: column
     });
+    // So it now play multiple turns before the turn is played
+    play = false;
   }
 }
 
