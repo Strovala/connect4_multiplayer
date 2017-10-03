@@ -28,6 +28,10 @@ var Neural = (function (Neural) {
     this.value = activation(this.value);
   }
 
+  Neuron.prototype.reset = function Neuron_reset() {
+    this.inputs = [];
+  }
+
   Neuron.prototype.send = function Neuron_send() {
     var that = this;
     this.receivers.forEach(function (receiver, index) {
@@ -129,7 +133,18 @@ var Neural = (function (Neural) {
         layer.fire(false);
     });
 
-    return this.getOutputs();
+    var out = this.getOutputs();
+    // Reset neurons inputs
+    this.reset();
+    return out;
+  }
+
+  Network.prototype.reset = function Network_reset() {
+    this.layers.forEach(function (layer) {
+      layer.neurons.forEach(function (neuron) {
+        neuron.reset();
+      });
+    });
   }
 
   Network.prototype.getOutputs = function Network_getOutputs() {

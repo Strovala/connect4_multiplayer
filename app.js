@@ -18,7 +18,7 @@ console.log("My socket server is running!");
 // Initialize sockets
 var socket = require('socket.io');
 var io = socket(ioServer);
-
+var game = 0;
 io.sockets.on('connection', function(socket) {
   console.log("New connection : " + socket.id);
   var client;
@@ -88,19 +88,34 @@ io.sockets.on('connection', function(socket) {
   // When client plays turn
   socket.on('turn', function(data) {
     var winner = server.game.winner();
+    var color = server.game.board.turn.number == 1 ? "RED" : "GREEN";
+    console.log(color + " -> " + data.column);
+    console.log(data.out);
     if (winner > 0) {
       // After finishing game start a new one
       // For purposes of training neural network
+      console.log("\nEND\n");
+      server.game.end();
+      updateClients();
       var turnsNumber = server.game.getTurnsNumber();
-      server.game.board = new Board(server.game.gameSettings);
-      server.game.start();
       io.sockets.emit('start_new', {
         turns: turnsNumber,
         winner: winner
       });
     } else {
       server.playTurn(data.column);
+      updateClients();
     }
+  });
+
+  socket.on('ready', function () {
+    server.game.board = new Board(server.game.gameSettings);
+    server.game.start();
+    if (game % 2 == 0)
+      server.game.board.turn = server.game.gameSettings.player2;
+    else
+      server.game.board.turn = server.game.gameSettings.player1;
+    game++;
     updateClients();
   });
 });
