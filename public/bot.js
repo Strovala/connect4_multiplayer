@@ -37,6 +37,13 @@ Bot.prototype.getMax = function getMax(board, depth) {
     return this.evaluate(board, this.me);
   }
 
+  var winner = board.getWinner();
+  if (winner == this.me) {
+    return Math.pow(this.reward, 8);
+  } else if (winner == this.opponent) {
+    return -Math.pow(this.reward, 8);
+  }
+
   var maxMove;
   var moveList = [];
   var legalMoves = board.legalMoves();
@@ -62,6 +69,13 @@ Bot.prototype.getMax = function getMax(board, depth) {
 Bot.prototype.getMin = function getMin(board, depth) {
   if (depth <= 0) {
     return this.evaluate(board, this.me);
+  }
+
+  var winner = board.getWinner();
+  if (winner == this.me) {
+    return Math.pow(this.reward, 8);
+  } else if (winner == this.opponent) {
+    return -Math.pow(this.reward, 8);
   }
 
   var maxMove;
@@ -121,7 +135,7 @@ Bot.prototype.nextFourColumn = function nextFourColumn(board, row, column) {
 Bot.prototype.nextFourDiagonalDown = function nextFourDiagonalDown(board, row, column) {
   four = [];
   if (!(
-    board.valid(row, column)   < 0 ||
+    board.valid(row, column)     < 0 ||
     board.valid(row+1, column+1) < 0 ||
     board.valid(row+2, column+2) < 0 ||
     board.valid(row+3, column+3) < 0
@@ -137,7 +151,7 @@ Bot.prototype.nextFourDiagonalDown = function nextFourDiagonalDown(board, row, c
 Bot.prototype.nextFourDiagonalUp = function nextFourDiagonalUp(board, row, column) {
   four = [];
   if (!(
-    board.valid(row, column)   < 0 ||
+    board.valid(row, column)     < 0 ||
     board.valid(row-1, column+1) < 0 ||
     board.valid(row-2, column+2) < 0 ||
     board.valid(row-3, column+3) < 0
@@ -156,19 +170,24 @@ Bot.prototype.evaluate = function evaluate(board, playerNumber) {
     for (var column = 0; column < board.width; column++) {
       //Get 4 fields from row
       var fourRows = this.nextFourRow(board, row, column);
-      sum += this.calculateFour(fourRows, playerNumber, board);
+      var temp = this.calculateFour(fourRows, playerNumber, board);
 
+      sum += temp;
       //Get 4 fields from column
       var fourColumns = this.nextFourColumn(board, row, column);
-      sum += this.calculateFourColumns(fourColumns, playerNumber, board);
+      var temp = this.calculateFourColumns(fourColumns, playerNumber, board);
 
+      sum += temp;
       //Get 4 fields from diagonal towards down
       var fourDiagonalsDown = this.nextFourDiagonalDown(board, row, column);
-      sum += this.calculateFour(fourDiagonalsDown, playerNumber, board);
+      var temp = this.calculateFour(fourDiagonalsDown, playerNumber, board);
 
+      sum += temp;
       //Get 4 fields from diagonal towards up
       var fourDiagonalsUp = this.nextFourDiagonalUp(board, row, column);
-      sum += this.calculateFour(fourDiagonalsUp, playerNumber, board);
+      var temp = this.calculateFour(fourDiagonalsUp, playerNumber, board);
+
+      sum += temp;
     }
   }
   return sum;
@@ -228,7 +247,7 @@ Bot.prototype.calculateFourColumns = function calculateFourColumns(four, playerN
         return Math.pow(this.reward, 2);
 
       // Otherwise
-      // 2220
+      // 1110
       // xxx0
       // xxx0
       // ....
