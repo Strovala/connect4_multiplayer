@@ -42,9 +42,12 @@ function lateSetUp() {
   socket.on('update', update);
   socket.on('start_new', newGame);
   socket.on('best_set', function (data) {
-    var best = JSON.parse(data.best);
-    netSet.setWeights(best);
-  })
+    if (data.best != "") {
+      var best = JSON.parse(data.best);
+      netSet.setWeights(best);
+      net.setWeights(best);
+    }
+  });
   socket.on('disconnect_reqest', function() {
     console.log('Ordered dissconection');
     socket.emit('disconnect');
@@ -52,7 +55,7 @@ function lateSetUp() {
     render = false;
     // refresh
     location.reload();
-  })
+  });
 
   ellipseMode(CORNER);
 }
@@ -112,14 +115,8 @@ function newGame(data) {
       })
       gen.individuals.forEach(function (individual) {
         individual.wins = [
-          {
-            win: 0,
-            turns: 0
-          },
-          {
-            win: 0,
-            turns: 0
-          }
+          { win: 0, turns: 0 },
+          { win: 0, turns: 0 }
         ];
       });
       currNetwork = 0;
@@ -204,7 +201,10 @@ function botPlay() {
         var boardObj = new Board(gameSettings.fieldHeight, gameSettings.fieldWidth);
         boardObj = board.copy();
 
-        var out = netSet.run(boardObj.getInput());
+        // If I am player 2 set inverse parameter to true otherwise its false
+        var input = boardObj.getInput(me.number == 2);
+        debugger;
+        var out = netSet.run(input);
         column = boardObj.getMoveFromOutput(out);
       }
       // Your Code End

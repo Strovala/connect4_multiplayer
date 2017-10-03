@@ -33,23 +33,22 @@ io.sockets.on('connection', function(socket) {
       board: server.game.board
     });
 
+    // Send saved network to clients
+    var fs = require('fs');
+    var best = "bst";
+    var that = this;
+    fs.readFile("best", 'utf8', function(err, data) {
+        if(err) {
+            return console.log(err);
+        }
+        socket.emit('best_set', {
+          best: data
+        });
+    });
+
     // When both players are connected
     if (Object.keys(server.clients).length == 2) {
       server.game.start();
-
-      var fs = require('fs');
-      var best = "bst";
-      var that = this;
-      fs.readFile("best", 'utf8', function(err, data) {
-          if(err) {
-              return console.log(err);
-          }
-
-          socket.emit('best_set', {
-            best: data
-          });
-      });
-
       updateClients();
     }
   }
@@ -90,6 +89,10 @@ io.sockets.on('connection', function(socket) {
     var winner = server.game.winner();
     var color = server.game.board.turn.number == 1 ? "RED" : "GREEN";
     console.log(color + " -> " + data.column);
+    // Problem is that he lears when he is 1
+    // Server just goes who plays first (1 or 2)
+    // And when testing network may be 2
+    console.log(data.out);
     if (winner > 0) {
       // After finishing game start a new one
       // For purposes of training neural network

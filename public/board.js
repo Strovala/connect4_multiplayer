@@ -160,7 +160,12 @@ Board.prototype.toString = function toString() {
 
 // Neural network learning purpose
 // 126 inputs 3 for each field
-Board.prototype.getInput = function getInput() {
+// Inverse puropse is to swap 1's and 2's in result
+// It is needed because of the neural network learns to play as 1
+// And when its 2 it becomes stupid
+Board.prototype.getInput = function getInput(inverse) {
+  if (inverse == undefined)
+    inverse = false;
   var input = [];
   for(var i = 0; i < this.height; i++) {
     for(var j = 0; j < this.width; j++) {
@@ -170,13 +175,13 @@ Board.prototype.getInput = function getInput() {
       else
         input.push(0);
       if (field === 1)
-        input.push(1);
+        input.push(inverse ? 0 : 1);
       else
-        input.push(0);
+        input.push(inverse ? 1 : 0);
       if (field === 2)
-        input.push(1);
+        input.push(inverse ? 0 : 1);
       else
-        input.push(0);
+        input.push(inverse ? 1 : 0);
     }
   }
 
