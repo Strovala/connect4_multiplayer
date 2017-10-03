@@ -5,8 +5,16 @@ var Genetic = (function(Genetic) {
   function Individual(sizes) {
     this.sizesOfNeural = sizes != undefined ? sizes : [126, 126, 126, 7];
 
-    this.wins = 0;
-    this.turns = 0;
+    this.wins = [
+      {
+        win: 0,
+        turns: 0
+      },
+      {
+        win: 0,
+        turns: 0
+      }
+    ];
 
     this.winsReward = 10000;
     this.turnsReward = 100;
@@ -16,24 +24,30 @@ var Genetic = (function(Genetic) {
     this.network = new Neural.Network(this.sizesOfNeural);
     this.network.setRandomWeights();
 
-    this.mutateRandomRate = 0.03;
-    this.mutateAddRandomRate = 0.05;
-    this.mutateChangeSingRate = 0.01;
-
+    this.mutateRandomRate = 0.6;
+    this.mutateAddRandomRate = 0.8;
+    this.mutateChangeSingRate = 0.4;
+    this.mutateBias = 0.7;
     this.id = posId++;
   }
 
 
   Individual.prototype.evaluate = function Individual_evaluate() {
-    this.value = this.wins * this.winsReward;
-    if (this.value > 0)
-      this.value -= this.turns * this.turnsReward;
-    else
-      this.value += this.turns * this.turnsReward;
+    this.value = 0;
+    for (var i = 0; i < this.wins.length; i++) {
+      this.value += this.wins[i].win * this.winsReward;
+      // If won punish for taking so long
+      // If lost reward for staying that long
+      this.value += this.wins[i].turns * this.turnsReward * this.wins[i].win * -1;
+    }
   }
 
   Individual.prototype.setWeight = function Individual_setWeight(layer, neuron, weight, value) {
     this.network.layers[layer].neurons[neuron].weights[weight] = value;
+  }
+
+  Individual.prototype.setBias = function Individual_setBias(layer, neuron, value) {
+    this.network.layers[layer].neurons[neuron].bias = value;
   }
 
   Individual.prototype.equals = function Individual_equals(individual) {
@@ -61,16 +75,24 @@ var Genetic = (function(Genetic) {
         that.setWeight(randomLayer, randomNeuron, ind, value);
       }
 
+      random = Math.random();
       if (random < that.mutateAddRandomRate) {
         var value = weight + Math.random() * 2 - 1;
         that.setWeight(randomLayer, randomNeuron, ind, value);
       }
 
+      random = Math.random();
       if (random < this.mutateChangeSingRate) {
         var value = weight * (-1);
         that.setWeight(randomLayer, randomNeuron, ind, value);
       }
     });
+
+    var random = Math.random();
+    if (random < that.mutateBias) {
+      var value = Math.random();
+      this.setBias(randomLayer, randomNeuron, value);
+    }
   }
 
   function Population(individualsNumber, sizes) {
@@ -118,9 +140,8 @@ var Genetic = (function(Genetic) {
     this.individuals.forEach(function (individual) {
       individual.evaluate();
     });
-    var temp = this.copy();
+
     this.sort();
-    console.log(this.equals(temp));
   }
 
   // Keep n individuals given by survive rate
@@ -147,8 +168,17 @@ var Genetic = (function(Genetic) {
     });
   }
 
+  Population.prototype.scaleValues = function Population_scaleValues() {
+    var minIndividual = this.individuals[this.individuals.length-1];
+
+    this.individuals.forEach(function (individual) {
+      individual.value += -minIndividual.value + 1;
+    });
+  }
+
   // Calculates average fitness of all individuals
   Population.prototype.calculateValues = function Population_calculateValues() {
+    this.scaleValues();
     this.calculateTotalValue();
     this.calculateAvgValue();
   }
@@ -173,58 +203,51 @@ var Genetic = (function(Genetic) {
 
   // Spins roulete wheel and pick parent
   Population.prototype.getParent = function Population_getParent(rank) {
-    // this.rouleteWheel();
-    return this.best(rank);
+    return this.rouleteWheel();
+    // return this.best(rank);
   }
 
 
   // Sets up a new generation
   Population.prototype.nextGeneration = function Population_nextGeneration() {
-    // debugger;
-    // this.evaluate();
-    // var temp = this.copy();
-    // temp = temp.slice(0, 2);
-    // this.murder(this.surviveRate);
-    // if (!this.equals(temp)) {
-    //   console.log("After murder");
-    // }
-    // console.log("==============");
-    // console.log("Best network wins");
-    // console.log(this.individuals[0].wins);
-    // console.log("Best network turns");
-    // console.log(this.individuals[0].turns);
-    // console.log("==============");
-    // var children = [];
-    // var childrenSize = this.size - this.individuals.length;
-    //
-    // for (var i = 0; i < childrenSize; i++) {
-    //   var mum = this.getParent(1);
-    //   var dad = this.getParent(2);
-    //   var dadWeights = dad.network.getWeights();
-    //   var mumWeights = mum.network.getWeights();
-    //
-    //   var childerWeights = this.crossover(mumWeights, dadWeights);
-    //
-    //   var son = new Individual(this.sizesOfNeural);
-    //   son.network.setWeights(childerWeights.son);
-    //   children.push(son);
-    //
-    //   if (children.length >= childrenSize)
-    //     break;
-    //
-    //   var doughter = new Individual(this.sizesOfNeural);
-    //   doughter.network.setWeights(childerWeights.doughter);
-    //   children.push(doughter);
-    // }
-    //
-    // // Add children into individuals
-    // var that = this;
-    // children.forEach(function (child) {
-    //   // mutate only children
-    //   // child.mutate();
-    //
-    //   that.individuals.push(child);
-    // });
+    this.evaluate();
+    this.murder(this.surviveRate);
+    console.log("==============");
+    console.log("Best network wins");
+    console.log(this.individuals[0].wins[0]);
+    console.log(this.individuals[0].wins[1]);
+    console.log("==============");
+    var children = [];
+    var childrenSize = this.size - this.individuals.length;
+
+    for (var i = 0; i < childrenSize; i++) {
+      var mum = this.getParent();
+      var dad = this.getParent();
+      var dadWeights = dad.network.getWeights();
+      var mumWeights = mum.network.getWeights();
+
+      var childerWeights = this.crossover(mumWeights, dadWeights);
+
+      var son = new Individual(this.sizesOfNeural);
+      son.network.setWeights(childerWeights.son);
+      children.push(son);
+
+      if (children.length >= childrenSize)
+        break;
+
+      var doughter = new Individual(this.sizesOfNeural);
+      doughter.network.setWeights(childerWeights.doughter);
+      children.push(doughter);
+    }
+
+    // Add children into individuals
+    var that = this;
+    children.forEach(function (child) {
+      // mutate only children
+      child.mutate();
+
+      that.individuals.push(child);
+    });
 
   }
 

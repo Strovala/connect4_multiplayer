@@ -90,7 +90,6 @@ io.sockets.on('connection', function(socket) {
     var winner = server.game.winner();
     var color = server.game.board.turn.number == 1 ? "RED" : "GREEN";
     console.log(color + " -> " + data.column);
-    console.log(data.out);
     if (winner > 0) {
       // After finishing game start a new one
       // For purposes of training neural network

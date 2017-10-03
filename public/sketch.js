@@ -13,7 +13,7 @@ var nickElem = $('#nick');
 var robotElem = $('#robot');
 var startBtn = $('#start_game');
 
-var gen = new Genetic.Population(5, [126, 50, 50, 7]), lastGen;
+var gen = new Genetic.Population(10, [126, 50, 50, 7]), lastGen;
 var net = gen.individuals[0].network;
 var netSet = new Neural.Network([126, 50, 50, 7]);
 var currNetwork = 0;
@@ -88,26 +88,40 @@ function newGame(data) {
   var winner = data.winner;
   var turns = data.turns;
   if (nickname == "Net") {
+    var opponentNumber = me.number == 1 ? 2 : 1;
     if (me.number === winner) {
-      gen.individuals[currNetwork].wins++;
+      gen.individuals[currNetwork].wins[(gamesPlayed+1)%2].win = 1;
       console.log("Network won");
+    } else if (opponentNumber === winner) {
+      gen.individuals[currNetwork].wins[(gamesPlayed+1)%2].win = -1;
+    } else {
+      gen.individuals[currNetwork].wins[(gamesPlayed+1)%2].win = 0;
     }
 
-    gen.individuals[currNetwork].turns += turns;
+    gen.individuals[currNetwork].wins[(gamesPlayed+1)%2].turns = turns;
+
     console.log(turns + " net " + gen.individuals[currNetwork].id);
     if (gamesPlayed % 2 == 0)
       currNetwork++;
 
-    if (currNetwork >= 5) {
-      // gen.nextGeneration();
-      // var bestWeights = gen.individuals[0].network.getWeights();
-      // socket.emit('best', {
-      //   best: bestWeights
-      // })
-      // gen.individuals.forEach(function (individual) {
-      //   individual.wins = 0;
-      //   individual.turns = 0;
-      // })
+    if (currNetwork >= gen.individuals.length) {
+      gen.nextGeneration();
+      var bestWeights = gen.individuals[0].network.getWeights();
+      socket.emit('best', {
+        best: bestWeights
+      })
+      gen.individuals.forEach(function (individual) {
+        individual.wins = [
+          {
+            win: 0,
+            turns: 0
+          },
+          {
+            win: 0,
+            turns: 0
+          }
+        ];
+      });
       currNetwork = 0;
     }
     net = gen.individuals[currNetwork].network;
