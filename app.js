@@ -100,6 +100,9 @@ io.sockets.on('connection', function(socket) {
       server.game.end();
       updateClients();
       var turnsNumber = server.game.getTurnsNumber();
+      console.log("Statistic about last game");
+      console.log(winner + " " + turnsNumber);
+      console.log("=========================");
       io.sockets.emit('start_new', {
         turns: turnsNumber,
         winner: winner

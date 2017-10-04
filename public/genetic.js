@@ -6,14 +6,8 @@ var Genetic = (function(Genetic) {
     this.sizesOfNeural = sizes != undefined ? sizes : [126, 126, 126, 7];
 
     this.wins = [
-      {
-        win: 0,
-        turns: 0
-      },
-      {
-        win: 0,
-        turns: 0
-      }
+      { win: 0, turns: 0 },
+      { win: 0, turns: 0 }
     ];
 
     this.winsReward = 10000;
@@ -35,7 +29,9 @@ var Genetic = (function(Genetic) {
   Individual.prototype.evaluate = function Individual_evaluate() {
     this.value = 0;
     for (var i = 0; i < this.wins.length; i++) {
-      this.value += this.wins[i].win * this.winsReward;
+      debugger;
+      var winsReward = this.wins[i].win == 1 ? this.winsReward * this.winsReward : this.winsReward;
+      this.value += this.wins[i].win * winsReward;
       // If won punish for taking so long
       // If lost reward for staying that long
       this.value += this.wins[i].turns * this.turnsReward * this.wins[i].win * -1;

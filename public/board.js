@@ -176,12 +176,16 @@ Board.prototype.getInput = function getInput(inverse) {
         input.push(0);
       if (field === 1)
         input.push(inverse ? 0 : 1);
-      else
+      else if (field === 2)
         input.push(inverse ? 1 : 0);
+      else
+        input.push(0);
       if (field === 2)
         input.push(inverse ? 0 : 1);
-      else
+      else if (field === 1)
         input.push(inverse ? 1 : 0);
+      else
+        input.push(0);
     }
   }
 
