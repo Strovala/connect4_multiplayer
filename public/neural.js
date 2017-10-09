@@ -1,191 +1,163 @@
-/*
-   netttt - evolving neural networks to play tic tac toe
-            <https://chazomaticus.github.io/netttt/>
-   Copyright 2013 Charles Lindsay
-
-   netttt is free software: you can redistribute it and/or modify it under the
-   terms of the GNU General Public License as published by the Free Software
-   Foundation, either version 3 of the License, or (at your option) any later
-   version.
-
-   netttt is distributed in the hope that it will be useful, but WITHOUT ANY
-   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-   details.
-
-   You should have received a copy of the GNU General Public License along with
-   netttt.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 var Neural = (function (Neural) {
-    "use strict";
 
-    function getSizes(nodes) {
-        return nodes.map(function (layer) {
-            return layer.length;
-        });
+  function Neuron(receivers) {
+    // Values sent to this neuron
+    this.inputs = [];
+    // The value this neuron will be sending out
+    this.value = 0;
+    // Neurons that this neuron should send data to
+    this.receivers = receivers || [];
+    // The weights on each neuron on next layer
+    this.weights = new Array(this.receivers.length);
+    // Bias for this neuron
+    this.bias = 0.3;
+  }
+
+  Neuron.prototype.accept = function Neuron_accept(data) {
+    this.inputs.push(data);
+  }
+
+  // Activation needs to be a function
+  Neuron.prototype.process = function Neuron_process(activation) {
+    this.value = 0;
+    var that = this;
+    this.inputs.forEach(function (input) {
+      that.value += input;
+    })
+    this.value += this.bias;
+    this.value = activation(this.value);
+  }
+
+  Neuron.prototype.reset = function Neuron_reset() {
+    this.inputs = [];
+  }
+
+  Neuron.prototype.send = function Neuron_send() {
+    var that = this;
+    this.receivers.forEach(function (receiver, index) {
+      var valueToSend = that.value * that.weights[index];
+      receiver.accept(valueToSend);
+    });
+  }
+
+  Neuron.prototype.setWeights = function Neuron_setWeights(weights) {
+      for (var i = 0; i < this.weights.length; i++) {
+        this.weights[i] = weights != undefined ? weights[i] : Math.random()*2 - 1;
+      }
+  }
+
+  Neuron.prototype.getWeights = function Neuron_getWeights() {
+      return this.weights;
+  }
+
+  Neural.Neuron = Neuron;
+
+  function Layer(neuronsNumber, receivers) {
+    this.neurons = new Array(neuronsNumber);
+    for (var i = 0; i < neuronsNumber; i++) {
+      this.neurons[i] = new Neuron(receivers);
     }
+  }
 
-    function makeNode(layerIndex, index, sizes, nodes) {
-        var node = {
-            input: 0
-        };
+  Layer.prototype.fire = function Layer_fire(doesProcess) {
+    // if (doesProcess == undefined)
+    //   doesProcess = true;
+    doesProcess = doesProcess == undefined || doesProcess;
+    this.neurons.forEach(function (neuron) {
+      if (doesProcess)
+        neuron.process(function sigmoid(value) {
+          return 1/(1+Math.pow(Math.E, -value));
+        });
+      neuron.send();
+    });
+  }
 
-        if (layerIndex < sizes.length - 1) {
-            node.threshold = (typeof nodes === 'undefined'
-                ? 1
-                : nodes[layerIndex][index].threshold
-            );
-
-            node.weights = (typeof nodes === 'undefined'
-                ? new Array(sizes[layerIndex + 1])
-                : nodes[layerIndex][index].weights.map(function (w) {
-                    return w;
-                })
-            );
-        }
-
-        return node;
+  Layer.prototype.setWeights = function Layer_setWeights(weights) {
+    for (var i = 0; i < this.neurons.length; i++) {
+      this.neurons[i].setWeights(weights != undefined ? weights[i] : undefined);
     }
+  }
 
-    function Net(sizesOrNodes) {
-        var sizes, nodes;
-        if (Array.isArray(sizesOrNodes) && Array.isArray(sizesOrNodes[0])) {
-            sizes = getSizes(sizesOrNodes);
-            nodes = sizesOrNodes;
-        }
-        else {
-            sizes = sizesOrNodes;
-        }
+  Layer.prototype.getWeights = function Layer_getWeights() {
+    return this.neurons.map(function (neuron) {
+      return neuron.getWeights();
+    });
+  }
 
-        this.nodes = sizes.map(function (size, i) {
-            var layer = new Array(size);
-            for (var j = 0; j < size; ++j) {
-                layer[j] = makeNode(i, j, sizes, nodes);
-            }
-            return layer;
-        });
+  Neural.Layer = Layer;
+
+  function Network(sizes) {
+    this.sizes = sizes;
+    this.layers = new Array(sizes.length);
+    for (var i = sizes.length-1; i >= 0; i--) {
+      if (i < sizes.length - 1) {
+        this.layers[i] = new Layer(sizes[i], this.layers[i+1].neurons);
+      } else {
+        this.layers[i] = new Layer(sizes[i], []);
+      }
     }
+  }
 
-    Net.prototype.eachNode = function Net_eachNode(visitOutput, callback) {
-        var lastLayer = this.nodes.length - (visitOutput ? 0 : 1);
-        for (var layerIndex = 0; layerIndex < lastLayer; ++layerIndex) {
-            for (var i = 0; i < this.nodes[layerIndex].length; ++i) {
-                callback(this.nodes[layerIndex][i], layerIndex, i, this.nodes);
-            }
-        }
-    };
+  Network.prototype.setInput = function Network_setInput(inputData) {
+    var input = this.layers[0];
+    for (var i = 0; i < input.neurons.length; i++) {
+      input.neurons[i].value = inputData[i];
+    }
+  }
 
-    Net.prototype.getSizes = function Net_getSizes() {
-        return getSizes(this.nodes);
-    };
+  Network.prototype.setWeights = function Network_setWeights(weights) {
+    for (var i = 0; i < this.layers.length; i++) {
+        this.layers[i].setWeights(weights != undefined ? weights[i] : undefined);
+    }
+  }
 
-    Net.prototype.getThresholds = function Net_getThresholds() {
-        return this.nodes.map(function (layer, layerIndex) {
-            return layer.map(function (node) {
-                return node.threshold;
-            });
-        });
-    };
+  Network.prototype.getWeights = function Network_getWeights() {
+    return this.layers.map(function (layer) {
+      return layer.getWeights();
+    });
+  }
 
-    Net.prototype.getWeights = function Net_getWeights() {
-        return this.nodes.map(function (layer, layerIndex) {
-            return layer.map(function (node) {
-                if (typeof node.weights === 'undefined') {
-                    return [];
-                }
-                return node.weights.map(function (w) { return w; });
-            });
-        });
-    };
+  // Sets wights in [-1, 1)
+  Network.prototype.setRandomWeights = function Network_setRandomWeights() {
+    this.setWeights();
+  }
 
-    Net.prototype.setThresholds = function Net_setThresholds(thresholds) {
-        this.eachNode(false, function (node, layerIndex, index) {
-            node.threshold = thresholds[layerIndex][index];
-        });
-    };
+  Network.prototype.run = function Network_run(inputs) {
+    this.setInput(inputs);
 
-    Net.prototype.setWeights = function Net_setWeights(weights) {
-        this.eachNode(false, function (node, layerIndex, index) {
-            node.weights = weights[layerIndex][index].map(function (w) {
-                return w;
-            });
-        });
-    };
+    this.layers.forEach(function (layer, ind) {
+      if (ind !== 0)
+        layer.fire();
+      else
+        // Dont process neurons from this layer
+        layer.fire(false);
+    });
 
-    Net.prototype.setRandomWeights = function Net_setRandomWeights() {
-        this.eachNode(false, function (node, layerIndex, index) {
-            var numWeights = node.weights.length;
-            node.weights = [];
-            for (var i = 0; i < numWeights; i++) {
-                node.weights.push(Math.random()*2-1);
-            }
-        });
-    };
+    var out = this.getOutputs();
+    // Reset neurons inputs
+    this.reset();
+    return out;
+  }
 
-    Net.prototype.reset = function Net_reset() {
-        this.eachNode(true, function (node) {
-            node.input = 0;
-        });
-    };
+  Network.prototype.reset = function Network_reset() {
+    this.layers.forEach(function (layer) {
+      layer.neurons.forEach(function (neuron) {
+        neuron.reset();
+      });
+    });
+  }
 
-    Net.prototype.setInputs = function Net_setInputs(inputs) {
-        this.nodes[0].forEach(function (node, index) {
-            node.input = inputs[index];
-        });
-    };
+  Network.prototype.getOutputs = function Network_getOutputs() {
+    var output = [];
+    var outputLayerNeurons = this.layers[this.layers.length-1].neurons;
+    output = outputLayerNeurons.map(function (neuron) {
+      return neuron.value;
+    });
+    return output;
+  }
 
-    Net.prototype.run = function Net_run(inputs) {
-        if (typeof inputs !== 'undefined') {
-            this.setInputs(inputs);
-        }
+  Neural.Network = Network;
 
-        this.eachNode(false, function (node, layerIndex, index, nodes) {
-          function sigm(val) {
-             return 1/(1+Math.pow(Math.E, -val));
-          }
-            node.threshold = sigm(node.input)
-            if (node.threshold > 0) {
-                for (var i = 0; i < node.weights.length; ++i) {
-                    nodes[layerIndex + 1][i].input += node.weights[i];
-                }
-            }
-        });
+  return Neural;
 
-        return this.getOutputs();
-    };
-
-    Net.prototype.getOutputs = function Net_getOutputs() {
-        return this.nodes[this.nodes.length - 1].map(function (node, index) {
-            return node.input;
-        });
-    };
-
-    Net.prototype.clone = function Net_clone() {
-        return new Net(this.nodes);
-    };
-
-    Net.prototype.export = function Net_export() {
-        return {
-            thresholds: this.getThresholds(),
-            weights: this.getWeights()
-        };
-    };
-
-    Net.import = function Net_import(obj) {
-        if (!Array.isArray(obj.thresholds) || !Array.isArray(obj.weights)) {
-            throw new Error("Neural.Net.import() needs an object with Array "
-                + "properties thresholds and weights"
-            );
-        }
-
-        var net = new Net(getSizes(obj.thresholds));
-        net.setThresholds(obj.thresholds);
-        net.setWeights(obj.weights);
-        return net;
-    };
-
-    Neural.Net = Net;
-
-    return Neural;
-}(Neural || {}));
+})(Neural || {});
