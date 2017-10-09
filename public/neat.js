@@ -1,7 +1,7 @@
 var Neat = (function (Neat) {
 
   function random(min, max) {
-    return Math.random() * (max - min) - min;
+    return Math.random() * (max - min) + min;
   }
 
   function randomInt(min, max) {
@@ -38,6 +38,27 @@ var Neat = (function (Neat) {
     return ret;
   };
 
+  var Genes = function () {};
+
+  Genes.prototype.forEach = function Genes_forEach(callback) {
+    var that = this;
+    Object.keys(this).forEach(function (key) {
+      var obj = that[key];
+      callback(obj);
+    });
+  };
+
+  Genes.prototype.size = function Genes_size(callback) {
+    return Object.keys(this).length;
+  };
+
+  Genes.prototype.push = function Genes_size(gene) {
+    debugger;
+    var hashKey = gene.innovation != undefined ? gene.innovation.toString() : gene.id.toString();
+    this[hashKey] = gene;
+  };
+
+
   var Neuron = function (type, inputGenes, outputGenes) {
     this.id = ID.getNeuron();
     this.value = 0;
@@ -45,9 +66,9 @@ var Neat = (function (Neat) {
     this.inputs = [];
     this.type = type || Types.INPUT;
     // Type of Gene
-    this.inputGenes = inputGenes || {};
+    this.inputGenes = inputGenes || new Genes();
     // Type of Gene
-    this.outputGenes = outputGenes || {};
+    this.outputGenes = outputGenes || new Genes();
   }
 
   Neuron.prototype.receive = function Neuron_receive(value) {
@@ -55,7 +76,7 @@ var Neat = (function (Neat) {
   };
 
   Neuron.prototype.ready = function Neuron_ready() {
-    return this.inputs.length == Object.keys(this.inputGenes).length;
+    return this.inputs.length == this.inputGenes.size();
   };
 
   // Activation must be a function
@@ -78,9 +99,7 @@ var Neat = (function (Neat) {
 
   // Needs to be called after process
   Neuron.prototype.send = function Neuron_send() {
-    var that = this;
-    Object.keys(this.outputGenes).forEach(function (key) {
-      var gene = that.outputGenes[key];
+    this.outputGenes.forEach(function (gene) {
       gene.out.receive(that.value);
     });
   };
@@ -90,26 +109,66 @@ var Neat = (function (Neat) {
   };
 
   Neuron.prototype.addOutputGene = function Neuron_addOutputGene(gene) {
-    var hashKey = gene.innovation.toString();
-    this.outputGenes[hashKey] = gene;
+    this.outputGenes.push(gene);
   };
 
   Neuron.prototype.addInputGene = function Neuron_addInputGene(gene) {
-    var hashKey = gene.innovation.toString();
-    this.inputGenes[hashKey] = gene;
+    this.inputGenes.push(gene);
   };
 
-  var Gene = function (in, out, weight) {
-    this.in = in;
+  var Gene = function (input, out, weight) {
+    this.innovation = ID.getInnovation();
+    this.in = input;
     this.out = out;
+    debugger
     this.weight = weight || random(Config.weightScope.min, Config.weightScope.max);
     this.enable = true;
-    this.innovation = ID.getInnovation();
   };
 
-  // TODO:
-  var Network = function () {
+  var Network = function (inputNeuronsNum, outputNeuronsNum, neurons, genes) {
+    // Default value for connect 4
+    this.inputsNum = inputNeuronsNum || 126;
+    this.outputsNum = outputNeuronsNum || 7;
+    this.neurons = neurons || new Genes();
+    this.genes = genes || new Genes();
+    var fitness = 0;
 
+    this.init();
   };
+
+  Network.prototype.init = function Network_init() {
+    for (var i = 0; i < this.inputsNum; i++) {
+      this.neurons.push(new Neuron(Types.INPUT));
+    }
+
+    for (var i = 0; i < this.outputsNum; i++) {
+      this.neurons.push(new Neuron(Types.OUTPUT));
+    }
+
+    var inputs = this.getNeurons(Types.INPUT);
+    var outputs = this.getNeurons(Types.OUTPUT);
+    var that = this;
+    inputs.forEach(function (input) {
+      outputs.forEach(function (output) {
+        var gene = new Gene(input, output);
+        that.genes.push(gene);
+        input.addOutputGene(gene);
+        output.addInputGene(gene);
+      })
+    })
+  };
+
+  Network.prototype.getNeurons = function Network_getNeurons(type) {
+    var neurons = [];
+    this.neurons.forEach(function (neuron) {
+      if (neuron.type == type)
+        neurons.push(neuron);
+    });
+    return neurons
+  };
+
+  Neat.Network = Network;
+
+  return Neat;
 
 })(Neat || {});
