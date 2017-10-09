@@ -62,6 +62,7 @@ var Neat = (function (Neat) {
   var Neuron = function (type, inputGenes, outputGenes) {
     this.id = ID.getNeuron();
     this.value = 0;
+    this.sent = false;
     // Receved input values
     this.inputs = [];
     this.type = type || Types.INPUT;
@@ -70,6 +71,13 @@ var Neat = (function (Neat) {
     // Type of Gene
     this.outputGenes = outputGenes || new Genes();
   }
+
+  Neuron.prototype.reset = function Neuron_reset() {
+    this.value = 0;
+    this.sent = false;
+    // Receved input values
+    this.inputs = [];
+  };
 
   Neuron.prototype.receive = function Neuron_receive(value) {
     this.inputs.push(value);
@@ -102,6 +110,7 @@ var Neat = (function (Neat) {
     this.outputGenes.forEach(function (gene) {
       gene.out.receive(that.value);
     });
+    this.sent = true;
   };
 
   Neuron.prototype.isInput = function () {
@@ -145,6 +154,7 @@ var Neat = (function (Neat) {
       this.neurons.push(new Neuron(Types.OUTPUT));
     }
 
+    // All connected at the start
     var inputs = this.getNeurons(Types.INPUT);
     var outputs = this.getNeurons(Types.OUTPUT);
     var that = this;
@@ -154,8 +164,8 @@ var Neat = (function (Neat) {
         that.genes.push(gene);
         input.addOutputGene(gene);
         output.addInputGene(gene);
-      })
-    })
+      });
+    });
   };
 
   Network.prototype.getNeurons = function Network_getNeurons(type) {
@@ -164,8 +174,57 @@ var Neat = (function (Neat) {
       if (neuron.type == type)
         neurons.push(neuron);
     });
-    return neurons
+    return neurons;
   };
+
+  Network.prototype.reset = function Network_reset() {
+    this.neurons.forEach(function (neuron) {
+      neuron.reset();
+    });
+  };
+
+  Network.prototype.getOutputData = function Network_getOutputData() {
+    var outputs = this.getNeurons(Types.OUTPUT);
+    return outputs.map(function (output) {
+      return output.value;
+    });
+  };
+
+  Network.prototype.process = function Network_process() {
+    var allDone = false;
+    while (!allDone) {
+      allDone = true;
+
+      this.neurons.forEach(function (neuron) {
+        if (!neuron.sent) {
+          var ready = neuron.process(function sigmoid(t) {
+            return 1/(1+Math.pow(Math.E, -t));
+          });
+          if (!ready)
+            allDone = false;
+          neuron.send();
+        }
+      });
+    }
+  };
+
+  Network.prototype.run = function (data) {
+    var inputs = this.getNeurons(Types.INPUT);
+    inputs.forEach(function (input, ind) {
+      input.value = data[ind];
+    });
+
+    this.process();
+
+    var outData = this.getOutputData();
+    this.reset();
+
+    return outData;
+  };
+
+  var Species = function () {
+
+  }
 
   Neat.Network = Network;
 
