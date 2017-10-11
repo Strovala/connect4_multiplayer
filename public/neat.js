@@ -305,8 +305,8 @@ var Neat = (function (Neat) {
 
   var Species = function (representative) {
     this.representative = representative || new Network();
-    this.genomes = [];
-    for (var i = 0; i < Config.speciesNumber; i++)
+    this.genomes = [this.representative];
+    for (var i = 1; i < Config.speciesNumber; i++)
       this.genomes.push(this.representative.clone(true));
   }
 
