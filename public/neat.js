@@ -125,10 +125,11 @@ var Neat = (function (Neat) {
   };
 
   // Needs to be called after process
-  Neuron.prototype.send = function Neuron_send() {
+  Neuron.prototype.send = function Neuron_send(network) {
     var that = this;
     this.outputGenes.forEach(function (gene) {
-      gene.out.receive(that.value);
+      var neuron = network.neurons.get(gene.outId);
+      neuron.receive(that.value * gene.weight);
     });
     this.sent = true;
   };
@@ -147,14 +148,14 @@ var Neat = (function (Neat) {
 
   var Gene = function (input, out, weight) {
     this.innovation = ID.getInnovation();
-    this.in = input;
-    this.out = out;
+    this.inId = input;
+    this.outId = out;
     this.weight = weight || random(Config.weightScope.min, Config.weightScope.max);
     this.enable = true;
   };
 
   Gene.prototype.clone = function Gene_clone() {
-    var clonedObject = new Gene(this.in, this.out, this.weight);
+    var clonedObject = new Gene(this.inId, this.outId, this.weight);
     clonedObject.innovation = this.innovation;
     return clonedObject;
   };
@@ -190,7 +191,7 @@ var Neat = (function (Neat) {
     var that = this;
     inputs.forEach(function (input) {
       outputs.forEach(function (output) {
-        var gene = new Gene(input, output);
+        var gene = new Gene(input.id, output.id);
         that.genes.push(gene);
         input.addOutputGene(gene);
         output.addInputGene(gene);
@@ -229,18 +230,6 @@ var Neat = (function (Neat) {
         var gene = that.genes.get(geneId);
         neuron.addOutputGene(gene);
       }
-    });
-
-    this.genes.forEach(function (gene) {
-      // Get input neuron
-      var neuronId = gene.in.id;
-      // Reset input neuron based on id
-      gene.in = that.neurons.get(neuronId);
-
-      // Get output neuron
-      var neuronId = gene.out.id;
-      // Reset output neuron based on id
-      gene.out = that.neurons.get(neuronId);
     });
   };
 
@@ -285,6 +274,7 @@ var Neat = (function (Neat) {
     while (!allDone) {
       allDone = true;
 
+      var that = this;
       this.neurons.forEach(function (neuron) {
         if (!neuron.sent) {
           var ready = neuron.process(function sigmoid(t) {
@@ -292,7 +282,7 @@ var Neat = (function (Neat) {
           });
           if (!ready)
             allDone = false;
-          neuron.send();
+          neuron.send(that);
         }
       });
     }
@@ -307,13 +297,13 @@ var Neat = (function (Neat) {
     this.process();
 
     var outData = this.getOutputData();
+
     this.reset();
 
     return outData;
   };
 
   var Species = function (representative) {
-    debugger;
     this.representative = representative || new Network();
     this.genomes = [];
     for (var i = 0; i < Config.speciesNumber; i++)
