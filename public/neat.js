@@ -15,7 +15,8 @@ var Neat = (function (Neat) {
     },
     speciesNumber: 10,
     inputNeuronsNum: 3,
-    outputNeuronsNum: 1
+    outputNeuronsNum: 1,
+    surviveRate: 0.4
   };
 
   var Types = {
@@ -172,6 +173,14 @@ var Neat = (function (Neat) {
     this.genes = genes || new Genes();
     var fitness = 0;
 
+    this.wins = [
+      { win: 0, turns: 0 },
+      { win: 0, turns: 0 }
+    ];
+
+    this.winsReward = 10000;
+    this.turnsReward = 100;
+
     if (init)
       this.init();
   };
@@ -303,6 +312,17 @@ var Neat = (function (Neat) {
     return outData;
   };
 
+  Network.prototype.evaluate = function Network_evaluate() {
+    this.fitness = 0;
+    for (var i = 0; i < this.wins.length; i++) {
+      var winsReward = this.wins[i].win == 1 ? this.winsReward * this.winsReward : this.winsReward;
+      this.fitness += this.wins[i].win * winsReward;
+      // If won punish for taking so long
+      // If lost reward for staying that long
+      this.fitness += this.wins[i].turns * this.turnsReward * this.wins[i].win * -1;
+    }
+  };
+
   var Species = function (representative) {
     this.representative = representative || new Network();
     this.genomes = [this.representative];
@@ -310,8 +330,122 @@ var Neat = (function (Neat) {
       this.genomes.push(this.representative.clone(true));
   }
 
-  Neat.Species = Species;
+  Species.prototype.sort = function Species_sort() {
+    this.genoms.sort(function(genome_1, genome_2) {
+      return genome_1.fitness - genome_2.fitness;
+    });
+  };
 
+  Species.prototype.evaluate = function Species_evaluate() {
+    this.genomes.forEach(function (genome) {
+      genome.evaluate();
+    });
+
+    this.sort();
+  };
+
+  Species.prototype.murder = function Species_murder() {
+    var surviveIndex = Math.floor(this.genomes.length * Config.surviveRate);
+    this.genomes = this.genomes.slice(0, surviveIndex);
+  };
+
+  Species.prototype.getByIndex = function Species_getByIndex(index) {
+    return this.genomes[index];
+  };
+
+  Species.prototype.getParent = function Species_getParent(index) {
+    if (index)
+      return this.getByIndex(index);
+    // else
+    //   this.rouleteWheel();
+  };
+
+  Species.prototype.crossover = function Species_crossover(dad, mum) {
+    function copy(network, parentNetwork, gene) {
+      var inNeuron = parentNetwork.neurons.get(gene.inId);
+      var outNeuron = parentNetwork.neurons.get(gene.outId);
+      network.genes.push(gene.clone());
+      network.neurons.push(inNeuron.clone());
+      network.neurons.push(outNeuron.clone());
+    }
+
+    var child = new Network(false);
+    var dadGenes = [];
+    dad.genes.forEach(function (gene) {
+      dadGenes.push(gene);
+    });
+    var mumGenes = [];
+    mum.genes.forEach(function (gene) {
+      mumGenes.push(gene);
+    });
+    var dadCnt = 0;
+    var mumCnt = 0;
+    while (dadCnt < dadGenes.length && mumCnt < mumGenes.length) {
+      var dadGene = dadGenes[dadCnt];
+      var mumGene = mumGenes[mumCnt];
+      if (dadGene.innovation == mumGene.innovation) {
+        // Get better
+        var gene = dad.fitness > mum.fitness ? dadGene : mumGene;
+        // Copy
+        copy(child, dad, gene);
+        // Inc both cnts
+        dadCnt++;
+        mumCnt++;
+      } else if (dadGene.innovation < mumGene.innovation) {
+        // Copy
+        copy(child, dad, dadGene);
+        // Inc dad cnts
+        dadCnt++;
+      } else if (dadGene.innovation > mumGene.innovation) {
+        // Copy
+        copy(child, mum, mumGene);
+        // Inc mum cnts
+        mumCnt++;
+      }
+    }
+
+    if (dadCnt == dadGenes.length) {
+      while (mumCnt < mumGenes.length) {
+        copy(child, mum, mumGenes[mumCnt]);
+        mumCnt++;
+      }
+    }
+
+    if (mumCnt == mumGenes.length) {
+      while (dadCnt < dadGenes.length) {
+        copy(child, dad, dadGenes[dadCnt]);
+        dadCnt++;
+      }
+    }
+
+    child.reconnect();
+
+    return child;
+  };
+
+  Species.prototype.nextGeneration = function Species_nextGeneration() {
+    this.evaluate();
+    this.murder();
+
+    var children = []
+    for (var i = this.genomes.length; i < Config.speciesNumber; i++) {
+      var dad = this.getParent(0);
+      var mum = this.getParent(1);
+
+      var child = this.crossover(dad, mum);
+      children.push(child);
+    }
+
+    children.forEach(function (child) {
+      child.mutate();
+      this.genomes.push(child);
+    });
+  };
+
+  Neat.Species = Species;
+  Neat.Network = Network;
+  Neat.Neuron = Neuron;
+  Neat.Gene = Gene;
   return Neat;
 
 })(Neat || {});
