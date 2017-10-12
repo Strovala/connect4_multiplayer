@@ -87,7 +87,7 @@ var Neat = (function (Neat) {
   }
 
   Neuron.prototype.clone = function Neuron_clone() {
-    var clonedObject = new Neuron(this.type, this.inputGenes, this.outputGenes);
+    var clonedObject = new Neuron(this.type);
     clonedObject.id = this.id;
     return clonedObject;
   };
@@ -208,37 +208,20 @@ var Neat = (function (Neat) {
     });
   };
 
-  // Reconnect neurons and genes objects based on id
-  Network.prototype.reconnect = function Network_reconnect() {
-    var that = this;
-    this.neurons.forEach(function (neuron) {
-      // Get ids of input genes
-      var genesIds = [];
-      neuron.inputGenes.forEach(function (gene) {
-        genesIds.push(gene.innovation);
-      });
-      // Reset genes
-      neuron.inputGenes = new Genes();
-      // Find gene based on ids got above and assign to input genes
-      for (var i = 0; i < genesIds.length; i++) {
-        var geneId = genesIds[i];
-        var gene = that.genes.get(geneId);
-        neuron.addInputGene(gene);
-      }
 
-      // Get ids of output genes
-      var genesIds = [];
-      neuron.outputGenes.forEach(function (gene) {
-        genesIds.push(gene.innovation);
-      });
-      // Reset genes
+  Network.prototype.reconnect = function Network_reconnect2() {
+    var that = this;
+    // Ensure that there isnt some gene pointers in neurons
+    this.neurons.forEach(function (neuron) {
       neuron.outputGenes = new Genes();
-      // Find gene based on ids got above and assign to output genes
-      for (var i = 0; i < genesIds.length; i++) {
-        var geneId = genesIds[i];
-        var gene = that.genes.get(geneId);
-        neuron.addOutputGene(gene);
-      }
+      neuron.inputGenes = new Genes();
+    });
+    this.genes.forEach(function (gene) {
+      var inNeuron = that.neurons.get(gene.inId)
+      inNeuron.outputGenes.push(gene);
+
+      var outNeuron = that.neurons.get(gene.outId)
+      outNeuron.inputGenes.push(gene);
     });
   };
 
@@ -446,6 +429,8 @@ var Neat = (function (Neat) {
   Neat.Network = Network;
   Neat.Neuron = Neuron;
   Neat.Gene = Gene;
+  Neat.Genes = Genes;
+
   return Neat;
 
 })(Neat || {});
