@@ -98,6 +98,21 @@ Bot.prototype.getMin = function getMin(board, depth) {
   return maxMove != undefined ? maxMove.value : 0;
 }
 
+Bot.prototype.nextFiveRow = function nextFiveRow(board, row, column) {
+  five = [];
+  if (!(
+    board.valid(row, column)   < 0 ||
+    board.valid(row, column+1) < 0 ||
+    board.valid(row, column+2) < 0 ||
+    board.valid(row, column+3) < 0 ||
+    board.valid(row, column+4) < 0
+  )) {
+    for (var offset = 0; offset < 5; offset++)
+      five.push(new Field(row, column+offset, board.board[row][column+offset]));
+  }
+  return five;
+};
+
 // Returns next four fields towards right
 // including one with row and column
 Bot.prototype.nextFourRow = function nextFourRow(board, row, column) {
@@ -168,6 +183,11 @@ Bot.prototype.evaluate = function evaluate(board, playerNumber) {
   var sum = 0;
   for (var row = 0; row < board.height; row++) {
     for (var column = 0; column < board.width; column++) {
+      // Check for sure win
+      var five = this.nextFiveRow(board, row, column);
+      var temp = this.checkRowSureWin(five, playerNumber, board);
+
+      sum += temp;
       //Get 4 fields from row
       var fourRows = this.nextFourRow(board, row, column);
       var temp = this.calculateFour(fourRows, playerNumber, board);
@@ -192,6 +212,64 @@ Bot.prototype.evaluate = function evaluate(board, playerNumber) {
   }
   return sum;
 }
+
+Bot.prototype.checkRowSureWin = function checkRowSureWin(five, playerNumber, board) {
+  if (five.length == 0)
+    return 0;
+  var opponentNumber = playerNumber === 1 ? 2 : 1;
+  // 01110
+  if (
+    five[0].value == 0            &&
+    five[1].value == playerNumber &&
+    five[2].value == playerNumber &&
+    five[3].value == playerNumber &&
+    five[4].value == 0
+  ) {
+    // First row of blank field in most left blank column
+    var firstBlankLeft = board.findNext(five[0].column);
+    // First row of blank field in most right blank column
+    var firstBlankRight = board.findNext(five[4].column);
+    // Difference between theese two blank fields
+    var differenceLeft = firstBlankLeft - five[0].row;
+    // Difference between theese two blank fields
+    var differenceRight = firstBlankRight - five[4].row;
+    // 01110
+    // xxxxx
+    if (differenceLeft == 0 && differenceRight == 0)
+      return Math.pow(this.reward, 6);
+    // Otherwise
+    //  0  111  0
+    // 0/x xxx 0/x
+    return 0;
+  }
+
+  // 02220
+  if (
+    five[0].value == 0            &&
+    five[1].value == opponentNumber &&
+    five[2].value == opponentNumber &&
+    five[3].value == opponentNumber &&
+    five[4].value == 0
+  ) {
+    // First row of blank field in most left blank column
+    var firstBlankLeft = board.findNext(five[0].column);
+    // First row of blank field in most right blank column
+    var firstBlankRight = board.findNext(five[4].column);
+    // Difference between theese two blank fields
+    var differenceLeft = firstBlankLeft - five[0].row;
+    // Difference between theese two blank fields
+    var differenceRight = firstBlankRight - five[4].row;
+    // 01110
+    // xxxxx
+    if (differenceLeft == 0 && differenceRight == 0)
+      return -Math.pow(this.reward, 6);
+    // Otherwise
+    //  0  111  0
+    // 0/x xxx 0/x
+    return 0;
+  }
+  return 0;
+};
 
 Bot.prototype.calculateFourColumns = function calculateFourColumns(four, playerNumber, board) {
   if (four.length == 0) {
