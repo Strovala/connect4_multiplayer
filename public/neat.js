@@ -17,9 +17,12 @@ var Neat = (function (Neat) {
       min: -0.5,
       max: 0.5
     },
-    mutationWeightRate: 0.8
+    mutationWeightRate: 0.8,
+    mutationEnableRate: 0.05,
+    mutationAddNeuronRate: 0.03,
+    mutationAddGeneRate: 0.05,
     adjustWeightRate: 0.9,
-    speciesNumber: 10,
+    speciesNumber: 4,
     inputNeuronsNum: 3,
     outputNeuronsNum: 1,
     surviveRate: 0.4
@@ -33,7 +36,8 @@ var Neat = (function (Neat) {
 
   var ID = {
     innovation: 0,
-    neuron: 0
+    neuron: 0,
+    species: 0
   };
 
   ID.getNeuron = function ID_getNeuron() {
@@ -45,6 +49,12 @@ var Neat = (function (Neat) {
   ID.getInnovation = function ID_getInnovation() {
     var ret = this.innovation;
     this.innovation++;
+    return ret;
+  };
+
+  ID.getSpecies = function ID_getSpecies() {
+    var ret = this.species;
+    this.species++;
     return ret;
   };
 
@@ -73,6 +83,14 @@ var Neat = (function (Neat) {
   Genes.prototype.push = function Genes_size(gene) {
     var hashKey = gene.innovation != undefined ? gene.innovation.toString() : gene.id.toString();
     this[hashKey] = gene;
+  };
+
+  Genes.prototype.toList = function Genes_toList() {
+    var list = [];
+    this.forEach(function (gene) {
+      list.push(gene);
+    });
+    return list;
   };
 
   Genes.prototype.get = function (id) {
@@ -133,11 +151,13 @@ var Neat = (function (Neat) {
 
   // Needs to be called after process
   Neuron.prototype.send = function Neuron_send(network) {
-    var that = this;
-    this.outputGenes.forEach(function (gene) {
-      var neuron = network.neurons.get(gene.outId);
-      neuron.receive(that.value * gene.weight);
-    });
+    if (this.enable) {
+      var that = this;
+      this.outputGenes.forEach(function (gene) {
+        var neuron = network.neurons.get(gene.outId);
+        neuron.receive(that.value * gene.weight);
+      });
+    }
     this.sent = true;
   };
 
@@ -177,7 +197,8 @@ var Neat = (function (Neat) {
     this.outputsNum = outputNeuronsNum || Config.outputNeuronsNum;
     this.neurons = neurons || new Genes();
     this.genes = genes || new Genes();
-    var fitness = 0;
+    this.fitness = 0;
+    this.speciesId = 0;
 
     this.wins = [
       { win: 0, turns: 0 },
@@ -234,6 +255,7 @@ var Neat = (function (Neat) {
   Network.prototype.clone = function Nework_clone(reinitialize) {
     reinitialize = reinitialize == undefined ? false : reinitialize;
     var clonedObject = new Network(false, this.inputsNum, this.outputsNum, this.neurons.clone(), this.genes.clone());
+    clonedObject.speciesId = this.speciesId;
     // We need to reconect neurons and genes cuz its not realy deep clone object, there are neurons and genes connected
     // from parent object
     clonedObject.reconnect();
@@ -327,23 +349,54 @@ var Neat = (function (Neat) {
   };
 
   Network.prototype.mutateEnable = function Network_mutateEnable() {
-
-  };
-
-  Network.prototype.mutateAddGene = function Network_mutateAddGene() {
-
+    this.genes.forEach(function (gene) {
+      if (random(0, 1) < Config.mutationEnableRate) {
+        // Flip value
+        gene.enable = gene.enable ? false : true;
+      }
+    });
   };
 
   Network.prototype.mutateAddNeuron = function Network_mutateAddNeuron() {
+    if (random(0, 1) < Config.mutationAddNeuronRate) {
+      // Get random gene
+      var genes = this.genes.toList();
+      var index = randomInt(0, genes.length);
+      var gene = genes[index];
+      // Disable that gene
+      gene.enable = false;
+      // Create new neuron
+      var neuron = new Neuron(Types.HIDDEN);
+      // Create two new genes
+      var geneFromIn = new Gene(gene.inId, neuron.id, gene.weight);
+      var geneToOut = new Gene(neuron.id, gene.outId, 1);
+      // Connect genes to new neuron
+      neuron.addInputGene(geneFromIn);
+      neuron.addOutputGene(geneToOut);
+      // Add them to network
+      this.neurons.push(neuron);
+      this.genes.push(geneFromIn);
+      this.genes.push(geneToOut);
+    }
+  };
 
+  Network.prototype.mutateAddGene = function Network_mutateAddGene() {
+    if (random(0, 1) < Config.mutationAddGeneRate) {
+      // TODO:
+    }
   };
 
   Network.prototype.mutate = function Network_mutate() {
-
+    this.mutateWeight();
+    this.mutateEnable();
+    this.mutateAddNeuron();
+    this.mutateAddGene();
   };
 
   var Species = function (representative) {
+    this.id = ID.getSpecies();
     this.representative = representative || new Network();
+    this.representative.speciesId = this.id;
     this.genomes = [this.representative];
     for (var i = 1; i < Config.speciesNumber; i++)
       this.genomes.push(this.representative.clone(true));
@@ -389,14 +442,8 @@ var Neat = (function (Neat) {
     }
 
     var child = new Network(false);
-    var dadGenes = [];
-    dad.genes.forEach(function (gene) {
-      dadGenes.push(gene);
-    });
-    var mumGenes = [];
-    mum.genes.forEach(function (gene) {
-      mumGenes.push(gene);
-    });
+    var dadGenes = dad.genes.toList();
+    var mumGenes = mum.genes.toList();
     var dadCnt = 0;
     var mumCnt = 0;
     while (dadCnt < dadGenes.length && mumCnt < mumGenes.length) {
