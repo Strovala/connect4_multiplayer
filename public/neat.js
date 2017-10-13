@@ -13,6 +13,12 @@ var Neat = (function (Neat) {
       min: -2,
       max: 2
     },
+    adjustWeightScope: {
+      min: -0.5,
+      max: 0.5
+    },
+    mutationWeightRate: 0.8
+    adjustWeightRate: 0.9,
     speciesNumber: 10,
     inputNeuronsNum: 3,
     outputNeuronsNum: 1,
@@ -304,6 +310,36 @@ var Neat = (function (Neat) {
       // If lost reward for staying that long
       this.fitness += this.wins[i].turns * this.turnsReward * this.wins[i].win * -1;
     }
+  };
+
+  Network.prototype.mutateWeight = function Network_mutateWeight() {
+    this.genes.forEach(function (gene) {
+      if (random(0, 1) < Config.mutationWeightRate) {
+        if (random(0, 1) < Config.adjustWeightRate) {
+          gene.weight += random(Config.adjustWeightScope.min, Config.adjustWeightScope.max);
+        }
+        // Set random weight
+        else {
+          gene.weight = random(Config.weightScope.min, Config.weightScope.max);
+        }
+      }
+    });
+  };
+
+  Network.prototype.mutateEnable = function Network_mutateEnable() {
+
+  };
+
+  Network.prototype.mutateAddGene = function Network_mutateAddGene() {
+
+  };
+
+  Network.prototype.mutateAddNeuron = function Network_mutateAddNeuron() {
+
+  };
+
+  Network.prototype.mutate = function Network_mutate() {
+
   };
 
   var Species = function (representative) {
