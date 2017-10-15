@@ -20,7 +20,7 @@ var Neat = (function (Neat) {
     excessConstant: 1,
     disjointConstant: 1,
     weightConstant: 0.4,
-    compatibleThreshold: 0.1,
+    compatibleThreshold: 0.5,
     mutationWeightRate: 0.8,
     mutationEnableRate: 0.05,
     mutationAddNeuronRate: 0.03,
@@ -601,7 +601,6 @@ var Neat = (function (Neat) {
   Species.prototype.nextGeneration = function Species_nextGeneration() {
     this.evaluate();
     this.murder();
-    
     var children = []
     for (var i = this.genomes.length; i < Config.speciesNumber; i++) {
       var dad = this.getParent(0);
@@ -627,6 +626,16 @@ var Neat = (function (Neat) {
       species.nextGeneration();
     });
     this.speciation();
+    this.cullSpecies();
+  };
+
+  Generation.prototype.cullSpecies = function Generation_cullSpecies() {
+    for (var i = 0; i < this.species.length; i++) {
+      if (this.species[i].genomes.length <= 2) {
+        this.species.splice(i, 1);
+        i--;
+      }
+    }
   };
 
   Generation.prototype.speciation = function Generation_speciation() {
@@ -655,17 +664,6 @@ var Neat = (function (Neat) {
 
     });
   };
-  //
-  // Generation.prototype.getSpeciesById = function Generation_getSpeciesById(id) {
-  //   for (var i = 0; i < this.species.length; i++)
-  //     if (this.species[i].id == id)
-  //       return this.species[i];
-  // };
-  //
-  // Generation.prototype.deleteGenome = function Generation_deleteGenome(genome) {
-  //   var species = this.getSpeciesById(genome.speciesId);
-  //   species.genomes.get()
-  // };
 
   Generation.prototype.changeSpecies = function Generation_changeSpecies(genome) {
     for (var i = 0; i < this.species.length; i++) {
