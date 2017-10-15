@@ -17,6 +17,10 @@ var Neat = (function (Neat) {
       min: -0.5,
       max: 0.5
     },
+    excessConstant: 1,
+    disjointConstant: 1,
+    weightConstant: 0.4,
+    compatibleThreshold: 0.1,
     mutationWeightRate: 0.8,
     mutationEnableRate: 0.05,
     mutationAddNeuronRate: 0.03,
@@ -382,13 +386,106 @@ var Neat = (function (Neat) {
 
   Network.prototype.mutateAddGene = function Network_mutateAddGene() {
     if (random(0, 1) < Config.mutationAddGeneRate) {
-      // TODO:
+      var hiddenNeurons = this.getNeurons(Types.HIDDEN);
+      var inputNeurons = this.getNeurons(Types.INPUT);
+      var outputNeurons = this.getNeurons(Types.OUTPUT);
+
+      var inNeurons = inputNeurons.concat(hiddenNeurons);
+      var outNeurons = hiddenNeurons.concat(outputNeurons);
+
+      var added = false;
+      while (!added) {
+        var inNeuron = inNeurons[randomInt(0, inNeurons.length)];
+        var outNeuron = outNeurons[randomInt(0, outNeurons.length)];
+
+        var validGene = true;
+        // Cant connect to itself
+        if (inNeuron.id == outNeuron.id) {
+          validGene = false;
+        }
+        // Cant have loops
+        // TODO:
+
+        // Check if gene exists
+        this.genes.forEach(function (gene) {
+          if (
+            gene.inId == inNeuron.id && gene.outId == outNeuron.id &&
+            gene.inId == outNeuron.id && gene.outId == inNeuron.id
+          )
+            validGene = false;
+        });
+
+        if (validGene) {
+          var gene = new Gene(inNeuron.id, outNeuron.id);
+          this.genes.push(gene);
+          added = true;
+        }
+      }
+
     }
   };
 
+  Network.prototype.getExcessGenes = function Network_getExcessGenes(genome) {
+    var genes = this.genes.toList();
+    var largestInnovation = genes.reduce(function(a, b) {
+      return Math.max(a.innovation, b.innovation);
+    });
+
+    var excessGenes = [];
+    genome.genes.forEach(function (gene) {
+      if (gene.innovation > largestInnovation)
+        excessGenes.push(gene);
+    });
+    return excessGenes;
+  };
+
+  Network.prototype.getDisjointGenes = function Network_getDisjointGenes(genome) {
+    var genes = this.genes.toList();
+    var largestInnovation = genes.reduce(function(a, b) {
+      return Math.max(a.innovation, b.innovation);
+    });
+
+    var disjointGenes = [];
+    var that = this;
+    genome.genes.forEach(function (gene) {
+      if (that.genes.get(gene.innovation) == undefined && gene.innovation < largestInnovation)
+        disjointGenes.push(gene);
+    });
+
+    this.genes.forEach(function (gene) {
+      if (genome.genes.get(gene.innovation) == undefined)
+        disjointGenes.push(gene);
+    });
+
+    return disjointGenes;
+  };
+
+  Network.prototype.getAvgWeight = function Network_getAvgWeight(genome) {
+    var mineWeightSum = this.genes.toList().reduce(function (sum, gene) {
+      return sum + gene.weight;
+    }, 0);
+    var comparedWeightSum = genome.genes.toList().reduce(function (sum, gene) {
+      return sum + gene.weight;
+    }, 0);
+    var mineWeight = mineWeightSum / this.genes.size();
+    var comparedWeight = comparedWeightSum / genome.genes.size();
+    return Math.abs(mineWeight - comparedWeight);
+  };
+
   Network.prototype.compatible = function Network_compatible(genome) {
-    // TODO:
-    return random(0, 1) < 0.5 ? true : false;
+    // Get maximum number of genes
+    var N = Math.max(this.genes.size(), genome.genes.size());
+    // Get excess genes number
+    var excess = this.getExcessGenes(genome).length;
+    // Get disjoint genes number
+    var disjoint = this.getDisjointGenes(genome).length;
+    // Get avg weight
+    var weight = this.getAvgWeight(genome);
+
+    var compatibleScore = excess * Config.excessConstant     / N +
+                          disjoint * Config.disjointConstant / N +
+                          weight * Config.weightConstant;
+    return compatibleScore < Config.compatibleThreshold;
   };
 
   Network.prototype.mutate = function Network_mutate() {
@@ -504,7 +601,7 @@ var Neat = (function (Neat) {
   Species.prototype.nextGeneration = function Species_nextGeneration() {
     this.evaluate();
     this.murder();
-
+    
     var children = []
     for (var i = this.genomes.length; i < Config.speciesNumber; i++) {
       var dad = this.getParent(0);
@@ -534,6 +631,10 @@ var Neat = (function (Neat) {
 
   Generation.prototype.speciation = function Generation_speciation() {
     var that = this;
+    // Set new representative for each species
+    this.species.forEach(function (species) {
+      species.representative = species.genomes[0];
+    });
     this.species.forEach(function (species) {
       var genomes = species.genomes;
       var representative = species.representative;
