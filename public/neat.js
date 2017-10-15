@@ -20,7 +20,7 @@ var Neat = (function (Neat) {
     excessConstant: 1,
     disjointConstant: 1,
     weightConstant: 0.4,
-    compatibleThreshold: 0.5,
+    compatibleThreshold: 1.1,
     mutationWeightRate: 0.8,
     mutationEnableRate: 0.05,
     mutationAddNeuronRate: 0.03,
@@ -427,12 +427,27 @@ var Neat = (function (Neat) {
 
   Network.prototype.getExcessGenes = function Network_getExcessGenes(genome) {
     var genes = this.genes.toList();
-    var largestInnovation = genes.reduce(function(a, b) {
-      return Math.max(a.innovation, b.innovation);
+    var minelargestInnovation = 0;
+    genes.forEach(function(gene) {
+      if (gene.innovation > minelargestInnovation)
+        minelargestInnovation = gene.innovation;
     });
+
+    var comparedlargestInnovation = 0;
+    genome.genes.forEach(function(gene) {
+      if (gene.innovation > comparedlargestInnovation)
+        comparedlargestInnovation = gene.innovation;
+    });
+
+    var largestInnovation = Math.min(minelargestInnovation, comparedlargestInnovation);
 
     var excessGenes = [];
     genome.genes.forEach(function (gene) {
+      if (gene.innovation > largestInnovation)
+        excessGenes.push(gene);
+    });
+
+    genes.forEach(function (gene) {
       if (gene.innovation > largestInnovation)
         excessGenes.push(gene);
     });
@@ -441,8 +456,10 @@ var Neat = (function (Neat) {
 
   Network.prototype.getDisjointGenes = function Network_getDisjointGenes(genome) {
     var genes = this.genes.toList();
-    var largestInnovation = genes.reduce(function(a, b) {
-      return Math.max(a.innovation, b.innovation);
+    var largestInnovation = 0;
+    genes.forEach(function(gene) {
+      if (gene.innovation > largestInnovation)
+        largestInnovation = gene.innovation;
     });
 
     var disjointGenes = [];
