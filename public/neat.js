@@ -23,7 +23,7 @@ var Neat = (function (Neat) {
     mutationAddGeneRate: 0.05,
     adjustWeightRate: 0.9,
     speciesNumber: 4,
-    inputNeuronsNum: 3,
+    inputNeuronsNum: 2,
     outputNeuronsNum: 1,
     surviveRate: 0.4
   };
@@ -386,6 +386,11 @@ var Neat = (function (Neat) {
     }
   };
 
+  Network.prototype.compatible = function Network_compatible(genome) {
+    // TODO:
+    return random(0, 1) < 0.5 ? true : false;
+  };
+
   Network.prototype.mutate = function Network_mutate() {
     this.mutateWeight();
     this.mutateEnable();
@@ -396,6 +401,9 @@ var Neat = (function (Neat) {
   var Species = function (representative) {
     this.id = ID.getSpecies();
     this.representative = representative || new Network();
+    if (representative != undefined) {
+      this.representative.speciesId = this.id;
+    }
     this.representative.speciesId = this.id;
     this.genomes = [this.representative];
     for (var i = 1; i < Config.speciesNumber; i++)
@@ -403,7 +411,7 @@ var Neat = (function (Neat) {
   }
 
   Species.prototype.sort = function Species_sort() {
-    this.genoms.sort(function(genome_1, genome_2) {
+    this.genomes.sort(function(genome_1, genome_2) {
       return genome_1.fitness - genome_2.fitness;
     });
   };
@@ -425,11 +433,15 @@ var Neat = (function (Neat) {
     return this.genomes[index];
   };
 
+  Species.prototype.rouleteWheel = function Species_rouleteWheel() {
+    // TODO:
+  };
+
   Species.prototype.getParent = function Species_getParent(index) {
-    if (index)
+    if (index != undefined)
       return this.getByIndex(index);
-    // else
-    //   this.rouleteWheel();
+    else
+      this.rouleteWheel();
   };
 
   Species.prototype.crossover = function Species_crossover(dad, mum) {
@@ -496,16 +508,83 @@ var Neat = (function (Neat) {
     var children = []
     for (var i = this.genomes.length; i < Config.speciesNumber; i++) {
       var dad = this.getParent(0);
-      var mum = this.getParent(1);
+      var mum = this.getParent(0);
 
       var child = this.crossover(dad, mum);
       children.push(child);
     }
 
+    var that = this;
     children.forEach(function (child) {
       child.mutate();
-      this.genomes.push(child);
+      that.genomes.push(child);
     });
+  };
+
+  var Generation = function () {
+    this.species = [new Species()];
+  }
+
+  Generation.prototype.nextGeneration = function Generation_nextGeneration() {
+    this.species.forEach(function (species) {
+      species.nextGeneration();
+    });
+    this.speciation();
+  };
+
+  Generation.prototype.speciation = function Generation_speciation() {
+    var that = this;
+    this.species.forEach(function (species) {
+      var genomes = species.genomes;
+      var representative = species.representative;
+      for (var i = 1; i < genomes.length; i++) {
+        if (genomes[i] && !genomes[i].compatible(representative)) {
+          that.changeSpecies(genomes[i].clone());
+          genomes[i] = undefined;
+        }
+      }
+
+      // Delete undefined elements
+      for (var i = 0; i < species.genomes.length; i++) {
+        if (species.genomes[i] == undefined) {
+          species.genomes.splice(i, 1);
+          i--;
+        }
+      }
+
+    });
+  };
+  //
+  // Generation.prototype.getSpeciesById = function Generation_getSpeciesById(id) {
+  //   for (var i = 0; i < this.species.length; i++)
+  //     if (this.species[i].id == id)
+  //       return this.species[i];
+  // };
+  //
+  // Generation.prototype.deleteGenome = function Generation_deleteGenome(genome) {
+  //   var species = this.getSpeciesById(genome.speciesId);
+  //   species.genomes.get()
+  // };
+
+  Generation.prototype.changeSpecies = function Generation_changeSpecies(genome) {
+    for (var i = 0; i < this.species.length; i++) {
+      var species = this.species[i];
+      if (genome.compatible(species.representative)) {
+        this.addGenome(genome, i);
+        return;
+      }
+    }
+    this.createNewSpecies(genome);
+  };
+
+  // Index of species
+  Generation.prototype.addGenome = function Generation_addGenome(genome, index) {
+    genome.speciesId = this.species[index].id;
+    this.species[index].genomes.push(genome);
+  };
+
+  Generation.prototype.createNewSpecies = function Generation_createNewSpecies(genome) {
+    this.species.push(new Species(genome));
   };
 
   Neat.Species = Species;
@@ -513,6 +592,7 @@ var Neat = (function (Neat) {
   Neat.Neuron = Neuron;
   Neat.Gene = Gene;
   Neat.Genes = Genes;
+  Neat.Generation = Generation;
 
   return Neat;
 

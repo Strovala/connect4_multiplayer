@@ -1,2 +1,4 @@
-var species = new Neat.Species();
-console.log(species);
+var generation = new Neat.Generation();
+console.log(generation);
+generation.nextGeneration();
+console.log(generation);
